@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="열역학 제1법칙을 배우기 전에 알아야 할 일곱 가지 개념을 직접 조작하며 확인하는 준비 학습">
+<title>열역학 제1법칙 준비 학습</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/sim.css?v=2">
+<style>
+.steps button { display: flex; justify-content: center; align-items: baseline; gap: 0.375rem; }
+.steps .n { font-family: var(--font-code); font-size: 0.875rem; }
+.steps button.done .n { color: var(--work); }
+@media (max-width: 52rem) { .steps .nm { display: none; } }
+
+.concept-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.25rem, 3vw, 1.5rem); margin: 0; }
+.core { margin: 0; font-size: 1.125rem; font-weight: 600; padding: 0.75rem 1rem; background: var(--accent-soft); border-radius: 10px; }
+.pts { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem; }
+.link { margin: 0; font-size: 0.9375rem; color: var(--muted); border-left: 3px solid var(--line); padding-left: 0.75rem; }
+
+.fig svg { display: block; width: 100%; height: auto; }
+.fig canvas { aspect-ratio: 9 / 5; }
+.ctls { display: flex; flex-direction: column; gap: 0.75rem; }
+.slider-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.slider-head label, .ctl-label { font-weight: 600; }
+.ctl { display: flex; flex-direction: column; gap: 0.25rem; }
+.readout { margin: 0; padding: 0.625rem 0.875rem; background: var(--bg); border-radius: 8px; font-family: var(--font-code); font-variant-numeric: tabular-nums; }
+.readout small { display: block; font-family: var(--font-body); color: var(--muted); font-size: 0.875rem; margin-top: 0.125rem; }
+.meter { height: 0.75rem; background: var(--bg); border-radius: 999px; overflow: hidden; }
+.meter div { height: 100%; background: var(--inner); border-radius: 999px; }
+
+.quiz { display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--line); padding-top: 0.875rem; }
+.quiz .q { margin: 0; font-weight: 600; }
+.quiz .opts { display: flex; flex-direction: column; gap: 0.375rem; }
+.quiz .opts button {
+  font: inherit; text-align: left; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer;
+}
+.quiz .opts button:hover { border-color: var(--accent); }
+.quiz .opts button.right { border-color: var(--work); color: var(--work); font-weight: 600; }
+.quiz .opts button.wrong { border-color: var(--heat); color: var(--heat); }
+.quiz .why { margin: 0; font-size: 0.9375rem; }
+.nav { display: flex; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="sim-head">
+    <a class="back" href="../index.html">← 물리 수업 자료실</a>
+    <span class="lesson-code">역학과 에너지 · II-1-03 준비</span>
+    <h1>열역학 제1법칙 준비 학습</h1>
+  </header>
+
+  <div class="seg steps" id="steps" role="tablist" aria-label="개념 고르기"></div>
+
+  <div class="cols">
+    <section class="panel" aria-label="직접 해 보기">
+      <div class="fig" id="fig"></div>
+      <div class="ctls" id="ctl"></div>
+      <p class="readout" id="out" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" aria-label="개념 설명과 확인 문제">
+      <h2 class="concept-title" id="c-title"></h2>
+      <p class="core" id="c-core"></p>
+      <ul class="pts" id="c-pts"></ul>
+      <p class="link" id="c-link"></p>
+      <div class="quiz">
+        <p class="q" id="q-text"></p>
+        <div class="opts" id="q-opts"></div>
+        <p class="why" id="q-why" aria-live="polite"></p>
+      </div>
+    </section>
+  </div>
+
+  <div class="nav">
+    <button class="btn" type="button" id="btn-prev">← 이전 개념</button>
+    <button class="btn primary" type="button" id="btn-next">다음 개념 →</button>
+  </div>
+
+  <footer>기체는 이상 기체로 다룹니다. 기체 법칙과 그래프의 기준 상태: 2.0×10⁵ Pa, 2.0×10⁻³ m³, 300 K.</footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  /* 차가움(파랑) → 뜨거움(빨강), t 는 0~1 */
+  function tcol(t, a) {
+    t = Math.max(0, Math.min(1, t));
+    return "rgba(" + Math.round(59 + 180 * t) + "," + Math.round(130 - 62 * t) + "," + Math.round(246 - 178 * t) + "," + a + ")";
+  }
+  function arr(x1, y1, x2, y2, col, w) {
+    var a = Math.atan2(y2 - y1, x2 - x1), h = 8 + w;
+    return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + (x2 - Math.cos(a) * h * 0.7) + '" y2="' + (y2 - Math.sin(a) * h * 0.7) + '" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round"/>' +
+      '<path d="M' + x2 + ' ' + y2 + 'L' + (x2 - h * Math.cos(a - 0.5)) + ' ' + (y2 - h * Math.sin(a - 0.5)) + 'L' + (x2 - h * Math.cos(a + 0.5)) + ' ' + (y2 - h * Math.sin(a + 0.5)) + 'z" fill="' + col + '"/>';
+  }
+  function svg(label, body) { return '<svg viewBox="0 0 360 200" role="img" aria-label="' + label + '" font-size="14">' + body + '</svg>'; }
+  function txt(x, y, s, fill, anchor, bold) {
+    return '<text x="' + x + '" y="' + y + '" fill="' + (fill || "var(--ink)") + '" text-anchor="' + (anchor || "start") + '"' + (bold ? ' font-weight="600"' : "") + '>' + s + '</text>';
+  }
+  var uid = 0;
+  function slider(parent, label, min, max, step, val, fmt, on) {
+    var id = "s" + (++uid), wrap = mk("div", "ctl"), head = mk("div", "slider-head"), lb = mk("label", "", label), o = mk("span", "num"), inp = mk("input");
+    lb.htmlFor = id; inp.type = "range"; inp.id = id; inp.min = min; inp.max = max; inp.step = step; inp.value = val;
+    head.appendChild(lb); head.appendChild(o); wrap.appendChild(head); wrap.appendChild(inp); parent.appendChild(wrap);
+    function f() { var v = parseFloat(inp.value); o.textContent = fmt(v); on(v); }
+    inp.addEventListener("input", f); f();
+  }
+  function choice(parent, label, opts, val, on) {
+    var wrap = mk("div", "ctl"), seg = mk("div", "seg");
+    wrap.appendChild(mk("span", "ctl-label", label)); seg.setAttribute("role", "tablist"); seg.setAttribute("aria-label", label);
+    opts.forEach(function (o, i) {
+      var b = mk("button", "", o); b.type = "button"; b.id = "c" + (++uid); b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(i === val));
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call(seg.children, function (c, j) { c.setAttribute("aria-selected", String(j === i)); });
+        on(i);
+      });
+      seg.appendChild(b);
+    });
+    wrap.appendChild(seg); parent.appendChild(wrap);
+  }
+  function say(out, main, sub) { out.textContent = main; if (sub) out.appendChild(mk("small", "", sub)); }
+  var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var C = [
+    {
+      nm: "온도", t: "온도와 분자 운동",
+      core: "절대 온도는 기체 분자의 평균 운동 에너지에 비례한다.",
+      pts: ["기체 분자는 끊임없이 무작위로 움직이며 벽과 충돌한다. 이 운동을 열운동이라고 한다.", "온도가 높을수록 분자가 평균적으로 더 빠르게 움직인다.", "절대 온도(K) = 섭씨온도(°C) + 273"],
+      link: "제1법칙에서: 기체의 온도가 올라갔다면 내부 에너지가 증가한 것이다.",
+      quiz: { q: "절대 온도가 300 K에서 600 K가 되면 기체 분자의 평균 운동 에너지는?", opts: ["2배가 된다", "4배가 된다", "변하지 않는다"], ans: 0, why: "평균 운동 에너지는 절대 온도에 비례하므로 온도가 2배이면 2배가 된다." },
+      init: function (fig, ctl, out) {
+        var s = { T: 300 }, cv = mk("canvas"), parts = [], meter = mk("div", "meter"), bar = mk("div");
+        cv.setAttribute("role", "img"); cv.setAttribute("aria-label", "상자 속에서 움직이는 기체 분자");
+        fig.appendChild(cv); meter.appendChild(bar);
+        for (var i = 0; i < 40; i++) parts.push({ u: Math.random(), v: Math.random(), a: Math.random() * 6.283 });
+        slider(ctl, "절대 온도", 100, 600, 10, 300, function (v) { return v + " K"; }, function (v) {
+          s.T = v; bar.style.width = (v / 600 * 100) + "%";
+          say(out, "평균 운동 에너지: 300 K 일 때의 " + (v / 300).toFixed(1) + "배", "보라색 막대의 길이가 분자의 평균 운동 에너지를 나타낸다.");
+        });
+        ctl.appendChild(meter);
+        return function (dt) {
+          var w = cv.clientWidth, h = cv.clientHeight, dpr = window.devicePixelRatio || 1;
+          if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+          var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+          var t = (s.T - 100) / 500, sp = 110 * Math.sqrt(s.T / 300);
+          c.fillStyle = tcol(t, 0.16); c.fillRect(4, 4, w - 8, h - 8);
+          c.fillStyle = tcol(t, 1);
+          parts.forEach(function (p) {
+            if (!still) {
+              p.u += Math.cos(p.a) * sp * dt / w; p.v += Math.sin(p.a) * sp * dt / h;
+              if (p.u < 0) { p.u = -p.u; p.a = Math.PI - p.a; } if (p.u > 1) { p.u = 2 - p.u; p.a = Math.PI - p.a; }
+              if (p.v < 0) { p.v = -p.v; p.a = -p.a; } if (p.v > 1) { p.v = 2 - p.v; p.a = -p.a; }
+            }
+            c.beginPath(); c.arc(12 + p.u * (w - 24), 12 + p.v * (h - 24), 4.5, 0, 6.283); c.fill();
+          });
+          c.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim(); c.lineWidth = 3;
+          c.strokeRect(4, 4, w - 8, h - 8);
+        };
+      }
+    },
+    {
+      nm: "열", t: "열과 열평형",
+      core: "열은 온도 차이 때문에 이동하는 에너지이다. 온도와 열은 다른 것이다.",
+      pts: ["열은 온도가 높은 물체에서 낮은 물체로 이동한다.", "두 물체의 온도가 같아지면 열의 이동이 멈춘다. 이 상태를 열평형이라고 한다.", "온도는 물체의 상태를 나타내는 값이고, 열은 이동하는 에너지의 양이다."],
+      link: "제1법칙에서: 기체가 열을 흡수해도 온도가 오르지 않는 경우(등온 과정)가 있다. 열과 온도를 구분해야 이해할 수 있다.",
+      quiz: { q: "80 °C 물체와 20 °C 물체를 접촉시켰다. 열은 언제까지 이동할까?", opts: ["두 물체의 온도가 같아질 때까지", "두 물체가 가진 에너지가 같아질 때까지", "뜨거운 물체가 가진 열이 모두 없어질 때까지"], ans: 0, why: "열은 온도 차이가 있을 때 이동하므로, 두 물체의 온도가 같아지는 열평형에서 이동이 멈춘다." },
+      init: function (fig, ctl, out) {
+        slider(ctl, "접촉한 뒤 흐른 시간", 0, 100, 1, 0, function (v) { return v + " 초"; }, function (t) {
+          var d = 30 * Math.exp(-t / 18), a = 50 + d, b = 50 - d, eq = d < 0.5;
+          fig.innerHTML = svg("접촉한 두 물체 사이의 열 이동",
+            '<rect x="60" y="70" width="120" height="90" fill="' + tcol((a - 20) / 60, 0.85) + '" stroke="var(--ink)" stroke-width="2.5"/>' +
+            '<rect x="180" y="70" width="120" height="90" fill="' + tcol((b - 20) / 60, 0.85) + '" stroke="var(--ink)" stroke-width="2.5"/>' +
+            txt(120, 122, a.toFixed(0) + " °C", "#fff", "middle", true) + txt(240, 122, b.toFixed(0) + " °C", "#fff", "middle", true) +
+            txt(120, 182, "물체 A", "var(--muted)", "middle") + txt(240, 182, "물체 B", "var(--muted)", "middle") +
+            (eq ? txt(180, 44, "열평형 — 열의 이동이 멈춤", "var(--ink)", "middle", true)
+                : arr(130, 48, 230, 48, "var(--heat)", 2 + d / 6) + txt(180, 32, "열", "var(--heat)", "middle", true)));
+          say(out, "온도 차이: " + (a - b).toFixed(0) + " °C", eq ? "온도가 같아져 더 이상 열이 이동하지 않는다." : "온도 차이가 클수록 열이 빠르게 이동한다(화살표가 굵다).");
+        });
+      }
+    },
+    {
+      nm: "압력", t: "압력",
+      core: "압력은 단위 넓이에 수직으로 작용하는 힘이다. P = F / A",
+      pts: ["같은 힘이라도 넓이가 좁을수록 압력이 크다.", "기체의 압력은 기체 분자들이 벽에 충돌하면서 벽을 미는 힘 때문에 생긴다.", "단위: Pa = N/m²"],
+      link: "제1법칙에서: 기체가 피스톤을 미는 힘은 F = PA 이다. 여기서 기체가 한 일 W = PΔV 가 나온다.",
+      quiz: { q: "같은 힘으로 누를 때 넓이를 절반으로 줄이면 압력은?", opts: ["2배가 된다", "절반이 된다", "변하지 않는다"], ans: 0, why: "P = F / A 에서 A 가 절반이 되면 P 는 2배가 된다." },
+      init: function (fig, ctl, out) {
+        var s = { F: 100, A: 50 };
+        function draw() {
+          var w = 50 + s.A * 2.2, len = 12 + s.F * 0.45, x = 180 - w / 2, P = s.F / (s.A * 1e-4);
+          fig.innerHTML = svg("넓이 A 인 면을 힘 F 로 누르는 그림",
+            '<line x1="20" y1="172" x2="340" y2="172" stroke="var(--ink)" stroke-width="3"/>' +
+            '<rect x="' + x + '" y="132" width="' + w + '" height="38" fill="var(--accent-soft)" stroke="var(--ink)" stroke-width="2.5"/>' +
+            arr(180, 126 - len, 180, 126, "var(--heat)", 5) +
+            txt(192, 126 - len / 2 + 4, "F = " + s.F + " N", "var(--heat)", "start", true) +
+            txt(180, 192, "A = " + s.A + " cm²", "var(--muted)", "middle"));
+          say(out, "P = " + s.F + " N ÷ " + (s.A * 1e-4).toFixed(4) + " m² = " + (P / 1e4).toFixed(1) + "×10⁴ Pa", "1 cm² = 0.0001 m²");
+        }
+        slider(ctl, "힘 F", 10, 200, 10, 100, function (v) { return v + " N"; }, function (v) { s.F = v; draw(); });
+        slider(ctl, "넓이 A", 10, 100, 5, 50, function (v) { return v + " cm²"; }, function (v) { s.A = v; draw(); });
+      }
+    },
+    {
+      nm: "기체 법칙", t: "이상 기체의 상태 변화",
+      core: "기체의 압력·부피·온도는 서로 묶여 있다. PV = nRT",
+      pts: ["온도가 일정할 때: 압력과 부피는 반비례한다. (보일 법칙)", "압력이 일정할 때: 부피는 절대 온도에 비례한다. (샤를 법칙)", "부피가 일정할 때: 압력은 절대 온도에 비례한다."],
+      link: "제1법칙에서: 등온·등압·등적 과정에서 나머지 두 값이 어떻게 변하는지 판단할 때 쓴다.",
+      quiz: { q: "온도가 일정할 때 기체의 부피를 절반으로 줄이면 압력은?", opts: ["2배가 된다", "절반이 된다", "변하지 않는다"], ans: 0, why: "온도가 일정하면 PV 가 일정하므로, 부피가 절반이 되면 압력은 2배가 된다." },
+      init: function (fig, ctl, out) {
+        var box = mk("div", "ctls");
+        function show(P, V, T, keep) {
+          var hgt = V / 4.5 * 150, top = 180 - hgt;
+          fig.innerHTML = svg("피스톤이 달린 실린더 속 기체",
+            '<rect x="130" y="' + top + '" width="100" height="' + hgt + '" fill="' + tcol((T - 150) / 450, 0.45) + '"/>' +
+            '<path d="M130 16V180H230V16" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>' +
+            '<rect x="132" y="' + (top - 12) + '" width="96" height="12" fill="var(--ink)"/>' +
+            '<rect x="175" y="' + Math.max(0, top - 40) + '" width="10" height="' + Math.min(28, top - 12) + '" fill="var(--muted)"/>' +
+            txt(250, 60, "압력 " + P.toFixed(2), "var(--ink)") + txt(250, 78, "×10⁵ Pa", "var(--muted)") +
+            txt(250, 108, "부피 " + V.toFixed(2), "var(--ink)") + txt(250, 126, "×10⁻³ m³", "var(--muted)") +
+            txt(250, 156, "온도 " + Math.round(T) + " K", "var(--ink)"));
+          say(out, keep, "슬라이더를 움직여도 이 값은 변하지 않는다.");
+        }
+        function setup(k) {
+          box.textContent = "";
+          if (k === 0) slider(box, "부피", 1, 4, 0.05, 2, function (v) { return v.toFixed(2) + " ×10⁻³ m³"; }, function (V) { var P = 4 / V; show(P, V, 300, "P × V = " + P.toFixed(2) + " × " + V.toFixed(2) + " = 4.00"); });
+          if (k === 1) slider(box, "절대 온도", 150, 600, 10, 300, function (v) { return v + " K"; }, function (T) { var V = 2 * T / 300; show(2, V, T, "V ÷ T = " + V.toFixed(2) + " ÷ " + T + " = 0.0067"); });
+          if (k === 2) slider(box, "절대 온도", 150, 600, 10, 300, function (v) { return v + " K"; }, function (T) { var P = 2 * T / 300; show(P, 2, T, "P ÷ T = " + P.toFixed(2) + " ÷ " + T + " = 0.0067"); });
+        }
+        choice(ctl, "일정하게 유지하는 것", ["온도", "압력", "부피"], 0, setup);
+        ctl.appendChild(box); setup(0);
+      }
+    },
+    {
+      nm: "일", t: "일과 에너지",
+      core: "힘이 한 일은 힘 × 이동 거리이고, 힘–이동 거리 그래프 아래의 넓이와 같다. W = Fs",
+      pts: ["물체에 일을 해 주면 그만큼 물체의 에너지가 증가한다.", "일은 에너지를 전달하는 방법 중 하나이다. 단위: J = N·m", "에너지는 다른 형태로 전환될 뿐, 새로 생기거나 없어지지 않는다. (에너지 보존)"],
+      link: "제1법칙에서: 기체가 한 일도 압력–부피 그래프 아래의 넓이로 구한다. 제1법칙은 열까지 포함한 에너지 보존 법칙이다.",
+      quiz: { q: "물체에 4 N의 힘을 주어 힘의 방향으로 3 m 이동시켰다. 힘이 한 일은?", opts: ["12 J", "7 J", "1.3 J"], ans: 0, why: "W = Fs = 4 N × 3 m = 12 J 이다. 그래프에서는 가로 3, 세로 4 인 직사각형의 넓이이다." },
+      init: function (fig, ctl, out) {
+        var s = { F: 4, d: 3 };
+        function X(v) { return 50 + v * 56; } function Y(v) { return 170 - v * 15; }
+        function draw() {
+          var b = '<rect x="' + X(0) + '" y="' + Y(s.F) + '" width="' + (X(s.d) - X(0)) + '" height="' + (Y(0) - Y(s.F)) + '" fill="var(--work)" fill-opacity="0.28"/>';
+          for (var f = 0; f <= 10; f += 5) b += txt(42, Y(f) + 5, f, "var(--muted)", "end");
+          for (var d = 0; d <= 5; d++) b += txt(X(d), 188, d, "var(--muted)", "middle");
+          b += '<path d="M50 14V170H340" fill="none" stroke="var(--ink)" stroke-width="2"/>' +
+            '<path d="M' + X(0) + ' ' + Y(s.F) + 'H' + X(s.d) + 'V' + Y(0) + '" fill="none" stroke="var(--work)" stroke-width="3.5"/>' +
+            txt(8, 14, "힘 (N)", "var(--muted)") + txt(340, 198, "이동 거리 (m)", "var(--muted)", "end");
+          if (s.F >= 2 && s.d >= 1.5) b += txt((X(0) + X(s.d)) / 2, (Y(0) + Y(s.F)) / 2 + 5, "넓이 = 일", "var(--work)", "middle", true);
+          fig.innerHTML = svg("힘과 이동 거리 그래프", b);
+          say(out, "W = " + s.F + " N × " + s.d + " m = " + (s.F * s.d).toFixed(1) + " J", "색칠한 직사각형의 넓이와 같다.");
+        }
+        slider(ctl, "힘 F", 0, 10, 0.5, 4, function (v) { return v + " N"; }, function (v) { s.F = v; draw(); });
+        slider(ctl, "이동 거리 s", 0, 5, 0.5, 3, function (v) { return v + " m"; }, function (v) { s.d = v; draw(); });
+      }
+    },
+    {
+      nm: "계와 부호", t: "계와 외부, 부호 약속",
+      core: "관심의 대상인 기체를 계라고 하고, 열과 일의 부호는 계를 기준으로 정한다.",
+      pts: ["Q > 0: 기체가 열을 흡수한다. Q < 0: 기체가 열을 방출한다.", "W > 0: 기체가 외부에 일을 한다(팽창). W < 0: 기체가 외부에서 일을 받는다(압축).", "W 는 '기체가 한 일'이다. 받은 일로 착각하지 않도록 주의한다."],
+      link: "제1법칙에서: Q = ΔU + W 의 Q 와 W 가 바로 이 약속을 따른다.",
+      quiz: { q: "기체가 팽창하면서 피스톤을 밀어냈다. 기체가 한 일 W 의 부호는?", opts: ["W > 0", "W < 0", "W = 0"], ans: 0, why: "기체가 팽창하며 외부에 일을 했으므로 W > 0 이다. 압축될 때는 외부에서 일을 받으므로 W < 0 이다." },
+      init: function (fig, ctl, out) {
+        var s = { q: 0, w: 0 };
+        function draw() {
+          var b = '<rect x="40" y="60" width="150" height="80" fill="var(--accent-soft)"/>' +
+            '<path d="M300 60H40V140H300" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>' +
+            '<rect x="190" y="62" width="14" height="76" fill="var(--ink)"/><rect x="204" y="95" width="100" height="10" fill="var(--muted)"/>' +
+            txt(115, 105, "계 (기체)", "var(--ink)", "middle", true) + txt(320, 30, "외부", "var(--muted)", "end");
+          b += s.q === 0 ? arr(115, 186, 115, 148, "var(--heat)", 4) + txt(130, 176, "Q > 0", "var(--heat)", "start", true)
+                         : arr(115, 148, 115, 186, "var(--heat)", 4) + txt(130, 176, "Q < 0", "var(--heat)", "start", true);
+          b += s.w === 0 ? arr(214, 80, 262, 80, "var(--work)", 4) + txt(238, 50, "W > 0", "var(--work)", "middle", true)
+                         : arr(262, 80, 214, 80, "var(--work)", 4) + txt(238, 50, "W < 0", "var(--work)", "middle", true);
+          fig.innerHTML = svg("실린더 속 기체와 외부 사이의 열과 일", b);
+          say(out, (s.q === 0 ? "Q > 0" : "Q < 0") + ",  " + (s.w === 0 ? "W > 0" : "W < 0"),
+            "기체가 " + (s.q === 0 ? "열을 흡수하고" : "열을 방출하고") + ", " + (s.w === 0 ? "외부에 일을 한다(팽창)." : "외부에서 일을 받는다(압축)."));
+        }
+        choice(ctl, "열", ["기체가 흡수", "기체가 방출"], 0, function (i) { s.q = i; draw(); });
+        choice(ctl, "일", ["기체가 외부에 함", "기체가 외부에서 받음"], 0, function (i) { s.w = i; draw(); });
+        draw();
+      }
+    },
+    {
+      nm: "그래프", t: "압력–부피 그래프 읽기",
+      core: "압력–부피 그래프의 한 점은 기체의 한 상태를 나타낸다.",
+      pts: ["점의 위치가 정해지면 압력과 부피가 정해지고, 온도도 함께 정해진다.", "같은 등온선(점선) 위의 점들은 온도가 같다. 오른쪽 위에 있는 등온선일수록 온도가 높다.", "기체의 상태가 변하는 과정은 점이 움직인 경로로 나타난다."],
+      link: "제1법칙에서: 경로 아래의 넓이가 기체가 한 일이다. 이제 탐구에서 직접 확인해 보자.",
+      quiz: { q: "압력–부피 그래프에서 한 점이 나타내는 것은?", opts: ["기체의 한 상태 (압력, 부피, 온도)", "기체가 한 일", "기체가 흡수한 열"], ans: 0, why: "한 점은 그 순간의 압력·부피·온도, 즉 기체의 상태를 나타낸다. 일은 점 하나가 아니라 경로 아래의 넓이로 나타난다." },
+      init: function (fig, ctl, out) {
+        var s = { P: 2, V: 2 };
+        function X(v) { return 50 + v / 4.5 * 290; } function Y(p) { return 170 - p / 8 * 152; }
+        function draw() {
+          var k = s.P * s.V, T = 300 * k / 4, d = "", b = "";
+          for (var v = Math.max(0.3, k / 8); v <= 4.5; v += 0.05) d += (d ? "L" : "M") + X(v).toFixed(1) + " " + Y(k / v).toFixed(1);
+          for (var p = 0; p <= 8; p += 2) b += txt(42, Y(p) + 5, p, "var(--muted)", "end");
+          for (var q = 0; q <= 4; q++) b += txt(X(q), 188, q, "var(--muted)", "middle");
+          b += '<path d="M50 14V170H340" fill="none" stroke="var(--ink)" stroke-width="2"/>' +
+            '<path d="' + d + '" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 5"/>' +
+            '<path d="M' + X(0) + ' ' + Y(s.P) + 'H' + X(s.V) + 'V' + Y(0) + '" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="2 4"/>' +
+            '<circle cx="' + X(s.V) + '" cy="' + Y(s.P) + '" r="7" fill="var(--accent)"/>' +
+            txt(8, 14, "압력 (×10⁵ Pa)", "var(--muted)") + txt(340, 198, "부피 (×10⁻³ m³)", "var(--muted)", "end");
+          fig.innerHTML = svg("압력-부피 그래프 위의 한 점과 등온선", b);
+          say(out, "압력 " + s.P.toFixed(1) + ",  부피 " + s.V.toFixed(1) + "  →  온도 " + Math.round(T) + " K", "점선은 이 점을 지나는 등온선이다. P × V 가 같은 점들은 온도가 같다.");
+        }
+        slider(ctl, "압력", 0.5, 7, 0.5, 2, function (v) { return v.toFixed(1) + " ×10⁵ Pa"; }, function (v) { s.P = v; draw(); });
+        slider(ctl, "부피", 0.5, 4, 0.5, 2, function (v) { return v.toFixed(1) + " ×10⁻³ m³"; }, function (v) { s.V = v; draw(); });
+      }
+    }
+  ];
+
+  var cur = 0, solved = [], tick = null;
+
+  function renderSteps() {
+    var box = $("steps"); box.textContent = "";
+    C.forEach(function (c, i) {
+      var b = mk("button", solved[i] ? "done" : ""); b.type = "button"; b.id = "step-" + i;
+      b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(i === cur));
+      b.setAttribute("aria-label", (i + 1) + ". " + c.t + (solved[i] ? " (확인 완료)" : ""));
+      b.appendChild(mk("span", "n", solved[i] ? "✓" : String(i + 1))); b.appendChild(mk("span", "nm", c.nm));
+      b.addEventListener("click", function () { show(i); });
+      box.appendChild(b);
+    });
+  }
+
+  function renderQuiz() {
+    var q = C[cur].quiz, box = $("q-opts"), why = $("q-why");
+    $("q-text").textContent = "확인 문제. " + q.q; box.textContent = ""; why.textContent = "";
+    /* 정답이 늘 같은 자리에 오지 않도록 보기 순서를 개념 번호에 따라 돌린다 */
+    var order = q.opts.map(function (_, i) { return (i + cur) % q.opts.length; });
+    order.forEach(function (oi) {
+      var b = mk("button", "", q.opts[oi]); b.type = "button"; b.id = "opt-" + cur + "-" + oi;
+      if (solved[cur] && oi === q.ans) b.className = "right";
+      b.addEventListener("click", function () {
+        if (oi === q.ans) { solved[cur] = true; renderSteps(); renderQuiz(); }
+        else { b.className = "wrong"; why.textContent = "다시 생각해 보세요. 왼쪽 그림을 움직여 보면 도움이 됩니다."; }
+      });
+      box.appendChild(b);
+    });
+    if (solved[cur]) why.textContent = "정답입니다. " + q.why;
+  }
+
+  function show(i) {
+    cur = i; var c = C[i], fig = $("fig"), ctl = $("ctl"), out = $("out");
+    fig.textContent = ""; ctl.textContent = ""; out.textContent = "";
+    $("c-title").textContent = (i + 1) + ". " + c.t;
+    $("c-core").textContent = c.core;
+    var ul = $("c-pts"); ul.textContent = ""; c.pts.forEach(function (p) { ul.appendChild(mk("li", "", p)); });
+    $("c-link").textContent = c.link;
+    tick = c.init(fig, ctl, out) || null;
+    renderSteps(); renderQuiz();
+    $("btn-prev").disabled = i === 0;
+    $("btn-next").textContent = i === C.length - 1 ? "열역학 제1법칙 탐구 시작 →" : "다음 개념 →";
+  }
+
+  $("btn-prev").addEventListener("click", function () { if (cur > 0) { show(cur - 1); window.scrollTo(0, 0); } });
+  $("btn-next").addEventListener("click", function () {
+    if (cur === C.length - 1) { location.href = "first-law.html"; return; }
+    show(cur + 1); window.scrollTo(0, 0);
+  });
+
+  var last = 0;
+  function frame(ms) { var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms; if (tick) tick(dt); requestAnimationFrame(frame); }
+  show(0); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

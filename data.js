@@ -4,7 +4,7 @@
   새 자료를 올릴 때는 맨 아래 items 배열에 한 줄을 추가한다.
 
   { title:   "정상파 탐구",                // 화면에 보이는 이름
-    type:    "sim",                        // sim 시뮬레이션 | lab 탐구 활동 | quiz 퀴즈 | tool 수업 도구 | doc 자료
+    type:    "sim",                        // learn 개념 학습 | sim 시뮬레이션 | lab 탐구 활동 | quiz 퀴즈 | tool 수업 도구 | doc 자료
     subject: "mechanics",                  // 아래 subjects 의 id
     lesson:  "III-2-03",                   // 자료 앞에 붙는 차시 코드 (생략 가능)
     href:    "sims/standing-wave.html",    // 이 폴더 기준 상대 경로
@@ -18,6 +18,7 @@ window.SITE = {
   term: "2026학년도",
 
   types: {
+    learn: "개념 학습",
     sim: "시뮬레이션",
     lab: "탐구 활동",
     quiz: "퀴즈",
@@ -34,6 +35,9 @@ window.SITE = {
   ],
 
   items: [
+    { title: "열역학 제1법칙 준비 학습", type: "learn", subject: "mechanics", lesson: "II-1-03",
+      href: "sims/first-law-prep.html", thumb: "assets/thumbs/first-law-prep.svg",
+      desc: "온도·열·압력·기체 법칙·일·부호·그래프, 미리 알아야 할 개념 7가지", added: "2026-10-12" },
     { title: "열역학 제1법칙 탐구", type: "sim", subject: "mechanics", lesson: "II-1-03",
       href: "sims/first-law.html", thumb: "assets/thumbs/first-law.svg",
       desc: "등온·단열·등압·등적 과정에서 Q = ΔU + W 확인하기", added: "2026-10-12" }

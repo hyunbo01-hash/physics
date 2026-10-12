@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="기체 분자가 든 상자, 힘-이동 거리 그래프, 압력-부피 그래프의 한 점">
+  <rect width="320" height="180" fill="#eef1fb"/>
+  <text x="160" y="30" text-anchor="middle" font-family="'IBM Plex Sans KR', 'Malgun Gothic', sans-serif" font-size="15" font-weight="600" fill="#1b1f27">미리 알아야 할 개념 7가지</text>
+
+  <!-- 온도와 분자 운동 -->
+  <rect x="22" y="56" width="80" height="80" fill="#f6c9cb" stroke="#1b1f27" stroke-width="3"/>
+  <g fill="#dc3f45">
+    <circle cx="38" cy="72" r="4"/><circle cx="60" cy="96" r="4"/><circle cx="84" cy="70" r="4"/>
+    <circle cx="44" cy="118" r="4"/><circle cx="78" cy="112" r="4"/><circle cx="66" cy="78" r="4"/>
+  </g>
+  <g stroke="#dc3f45" stroke-width="2" stroke-linecap="round">
+    <path d="M38 72l10 8M60 96l-9 9M84 70l-10 4M78 112l8-9"/>
+  </g>
+
+  <!-- 일 = 그래프 아래 넓이 -->
+  <rect x="130" y="88" width="52" height="46" fill="#12925f" fill-opacity="0.3"/>
+  <path d="M130 56v78h70" fill="none" stroke="#1b1f27" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M130 88h52v46" fill="none" stroke="#12925f" stroke-width="3.5"/>
+
+  <!-- 압력-부피 그래프의 한 점 -->
+  <path d="M226 56v78h74" fill="none" stroke="#1b1f27" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M234 62Q244 112 298 120" fill="none" stroke="#626a77" stroke-width="2" stroke-dasharray="4 4"/>
+  <path d="M226 101h29v33" fill="none" stroke="#3453d1" stroke-width="1.5" stroke-dasharray="2 4"/>
+  <circle cx="255" cy="101" r="6" fill="#3453d1"/>
+
+  <g font-family="'IBM Plex Sans KR', 'Malgun Gothic', sans-serif" font-size="12" fill="#626a77" text-anchor="middle">
+    <text x="62" y="158">온도</text><text x="165" y="158">일</text><text x="263" y="158">상태</text>
+  </g>
+</svg>
