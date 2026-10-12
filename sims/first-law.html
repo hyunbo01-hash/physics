@@ -43,6 +43,23 @@
   .tile .track { flex-basis: 100%; order: 3; }
 }
 
+/* 한눈에 정리 */
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+.sum-top { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 1rem; }
+@media (max-width: 56rem) { .sum-top { grid-template-columns: minmax(0, 1fr); } }
+.sum-graph svg { display: block; width: 100%; height: auto; }
+.sum-table th, .sum-table td { text-align: left; white-space: normal; vertical-align: top; }
+.sum-table td:first-child { font-weight: 600; white-space: nowrap; }
+.sum-table .lawcell { font-family: var(--font-code); white-space: nowrap; }
+.hq { color: var(--heat); } .hu { color: var(--inner); } .hw { color: var(--work); }
+.sum-table td b { font-family: var(--font-code); font-weight: 500; font-size: 1.0625rem; }
+.sum-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+.sum-card .keep { font-size: 0.875rem; color: var(--muted); }
+.sum-card .biglaw { font-family: var(--font-code); font-size: 1.5rem; line-height: 1.2; }
+.sum-card p { margin: 0; }
+.sum-card ul { margin: 0; padding-left: 1.125rem; font-size: 0.9375rem; color: var(--muted); display: flex; flex-direction: column; gap: 0.25rem; }
+.sum-card .btn { align-self: flex-start; margin-top: auto; }
+
 /* 활동 */
 .predict { display: flex; flex-direction: column; gap: 0.625rem; }
 .prow { display: grid; grid-template-columns: 4.5rem minmax(0, auto) minmax(0, 1fr); gap: 0.5rem 0.75rem; align-items: center; }
@@ -80,6 +97,7 @@
 
   <div class="seg" id="procs" role="tablist" aria-label="열역학 과정"></div>
 
+  <div class="stack" id="lab">
   <div class="cols">
     <section class="panel" aria-label="실린더와 피스톤">
       <div class="stage-head">
@@ -159,6 +177,28 @@
       </div>
     </div>
   </section>
+  </div>
+
+  <div class="stack" id="summary" hidden>
+    <div class="sum-top">
+      <section class="panel sum-graph" aria-label="네 가지 과정의 압력-부피 그래프">
+        <h2>같은 처음 상태에서 출발하면</h2>
+        <div id="sum-graph"></div>
+        <p class="note">같은 부피까지 팽창할 때 그래프 아래 넓이(기체가 한 일)는 등압 &gt; 등온 &gt; 단열 순서이고, 등적 과정은 넓이가 0 이다.</p>
+      </section>
+      <section class="panel" aria-label="네 가지 과정 비교 표">
+        <h2>한눈에 비교</h2>
+        <div class="table-wrap">
+          <table class="sum-table">
+            <thead><tr><th>과정</th><th>일정한 것</th><th class="hq">열 Q</th><th class="hu">내부 에너지 변화 ΔU</th><th class="hw">일 W</th><th>열역학 제1법칙</th></tr></thead>
+            <tbody id="sum-rows"></tbody>
+          </table>
+        </div>
+        <p class="note">압축하거나 냉각할 때는 표의 + 와 − 가 서로 바뀐다.</p>
+      </section>
+    </div>
+    <div class="sum-cards" id="sum-cards"></div>
+  </div>
 
   <footer>단원자 분자 이상 기체로 계산합니다 (U = 3/2·PV). 처음 상태: 2.0×10⁵ Pa, 2.0×10⁻³ m³, 300 K.</footer>
 </div>
@@ -172,6 +212,9 @@
     isoT: {
       name: "등온", ctrl: "V",
       cond: "온도가 일정하게 유지되며 압력과 부피가 변한다.",
+      keep: "온도 T", law: "Q = W", plus: "팽창", signs: [1, 0, 1],
+      core: "내부 에너지가 변하지 않으므로, 흡수한 열이 모두 외부에 하는 일로 쓰인다.",
+      dirs: ["등온 팽창: 열을 흡수하고 외부에 일을 한다.", "등온 압축: 외부에서 일을 받고 열을 방출한다."],
       scen: { label: "등온 팽창", dir: 1 },
       asks: [
         { q: "등온 팽창에서 기체의 온도는 그대로인데도 열을 흡수해야 하는 까닭은 무엇일까?",
@@ -183,6 +226,9 @@
     adia: {
       name: "단열", ctrl: "V",
       cond: "열의 출입 없이 기체가 압축되거나 팽창한다.",
+      keep: "열의 출입 없음", law: "0 = ΔU + W", plus: "팽창", signs: [0, -1, 1],
+      core: "열의 출입이 없으므로, 외부에 한 일만큼 내부 에너지가 줄어든다.",
+      dirs: ["단열 팽창: 외부에 일을 하고 온도가 내려간다.", "단열 압축: 외부에서 일을 받고 온도가 올라간다."],
       scen: { label: "단열 압축", dir: -1 },
       asks: [
         { q: "공기 압축 점화 장치의 솜에 불이 붙는 까닭을 Q, W, ΔU 로 설명해 보자.",
@@ -194,6 +240,9 @@
     isoP: {
       name: "등압", ctrl: "V",
       cond: "압력이 일정하게 유지되며 부피와 온도가 변한다.",
+      keep: "압력 P", law: "Q = ΔU + W", plus: "팽창", signs: [1, 1, 1],
+      core: "흡수한 열이 내부 에너지 증가와 외부에 하는 일로 나뉜다.",
+      dirs: ["등압 팽창: 열을 흡수하여 온도가 올라가고 외부에 일을 한다.", "등압 압축: 열을 방출하여 온도가 내려가고 외부에서 일을 받는다."],
       scen: { label: "등압 팽창", dir: 1 },
       asks: [
         { q: "흡수한 열 Q 중에서 일 W 로 쓰인 비율은 얼마인가? 팽창 정도를 바꾸면 달라지는가?",
@@ -205,6 +254,9 @@
     isoV: {
       name: "등적", ctrl: "P",
       cond: "부피가 일정하게 유지되며 압력과 온도가 변한다.",
+      keep: "부피 V", law: "Q = ΔU", plus: "가열", signs: [1, 1, 0],
+      core: "부피가 변하지 않아 일을 하지 않으므로, 흡수한 열이 모두 내부 에너지 증가에 쓰인다.",
+      dirs: ["등적 가열: 열을 흡수하여 온도와 압력이 올라간다.", "등적 냉각: 열을 방출하여 온도와 압력이 내려간다."],
       scen: { label: "등적 가열", dir: 1 },
       asks: [
         { q: "압력–부피 그래프 아래의 넓이가 0 인 것은 무엇을 뜻하는가?",
@@ -226,6 +278,7 @@
     W: ["외부에서 일을 받는다", "일을 하지 않는다", "외부에 일을 한다"]
   };
 
+  var view = "lab";
   var start, cur, proc = "isoT", res, steps = [], segs = [], pred = {}, geo = null;
   var $ = function (id) { return document.getElementById(id); };
   var slider = $("ctrl");
@@ -303,19 +356,88 @@
     renderLog();
   }
 
+  function showView() {
+    $("lab").hidden = view !== "lab";
+    $("summary").hidden = view !== "sum";
+    window.scrollTo(0, 0);
+  }
+  /* 과정 id 의 탐구 화면으로 이동 */
+  function go(id) {
+    if (view === "lab" && id === proc) return;
+    if (id !== proc) { commit(); proc = id; setupSlider(); renderPredict(); }
+    view = "lab"; showView(); renderProcs(); update();
+  }
+
+  function renderSummary() {
+    function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+    var SIGN = {
+      Q: ["− 방출", "0", "+ 흡수"],
+      dU: ["− 온도 하강", "0 온도 일정", "+ 온도 상승"],
+      W: ["− 일을 받음", "0", "+ 일을 함"]
+    };
+    var rows = $("sum-rows"), cards = $("sum-cards");
+    rows.textContent = ""; cards.textContent = "";
+    ORDER.forEach(function (id) {
+      var p = PROCS[id], tr = el("tr");
+      tr.appendChild(el("td", "", p.name + " " + p.plus));
+      tr.appendChild(el("td", "", p.keep));
+      ["Q", "dU", "W"].forEach(function (k, i) {
+        var td = el("td", ["hq", "hu", "hw"][i]), t = SIGN[k][p.signs[i] + 1];
+        td.appendChild(el("b", "", t.charAt(0))); td.appendChild(document.createTextNode(t.slice(1)));
+        tr.appendChild(td);
+      });
+      tr.appendChild(el("td", "lawcell", p.law));
+      rows.appendChild(tr);
+
+      var card = el("section", "panel sum-card");
+      card.appendChild(el("h2", "", p.name + " 과정"));
+      card.appendChild(el("span", "keep", "일정한 것: " + p.keep));
+      card.appendChild(el("span", "biglaw", p.law));
+      card.appendChild(el("p", "", p.core));
+      var ul = el("ul"); p.dirs.forEach(function (d) { ul.appendChild(el("li", "", d)); });
+      card.appendChild(ul);
+      var b = el("button", "btn", p.name + " 과정 탐구하기"); b.type = "button"; b.id = "go-" + id;
+      b.addEventListener("click", function () { go(id); });
+      card.appendChild(b);
+      cards.appendChild(card);
+    });
+
+    /* 네 과정을 같은 처음 상태에서 그린 압력-부피 그래프 (축척은 실제 계산값) */
+    function X(v) { return 54 + v / 4.5 * 340; }
+    function Y(pp) { return 282 - pp / 5 * 252; }
+    var svg = '<svg viewBox="0 0 440 320" role="img" aria-label="등압, 등온, 단열, 등적 과정을 함께 그린 압력-부피 그래프">' +
+      '<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker></defs>' +
+      '<path d="M54 22V282H410" fill="none" stroke="var(--ink)" stroke-width="2"/>' +
+      '<g font-size="14" fill="var(--muted)"><text x="8" y="18">압력 P</text><text x="410" y="306" text-anchor="end">부피 V</text></g>';
+    ORDER.forEach(function (id) {
+      var pts = curve(id, INIT, 4), last = pts[pts.length - 1];
+      var d = pts.map(function (q, i) { return (i ? "L" : "M") + X(q[0]).toFixed(1) + " " + Y(q[1]).toFixed(1); }).join("");
+      svg += '<path d="' + d + '" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arr)"/>';
+      svg += id === "isoV"
+        ? '<text x="' + X(last[0]) + '" y="' + (Y(last[1]) - 12) + '" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">' + PROCS[id].name + '</text>'
+        : '<text x="' + (X(last[0]) + 10) + '" y="' + (Y(last[1]) + 5) + '" font-size="15" font-weight="600" fill="var(--ink)">' + PROCS[id].name + '</text>';
+    });
+    svg += '<circle cx="' + X(INIT.V) + '" cy="' + Y(INIT.P) + '" r="6" fill="var(--surface)" stroke="var(--accent)" stroke-width="2.5"/>' +
+      '<text x="' + (X(INIT.V) - 12) + '" y="' + (Y(INIT.P) + 5) + '" text-anchor="end" font-size="14" fill="var(--muted)">처음 상태</text></svg>';
+    $("sum-graph").innerHTML = svg;
+  }
+
   function renderProcs() {
     var box = $("procs"); box.textContent = "";
     ORDER.forEach(function (id) {
       var b = document.createElement("button");
       b.type = "button"; b.id = "proc-" + id; b.setAttribute("role", "tab");
-      b.setAttribute("aria-selected", String(id === proc));
+      b.setAttribute("aria-selected", String(view === "lab" && id === proc));
       b.textContent = PROCS[id].name + " 과정";
-      b.addEventListener("click", function () {
-        if (id === proc) return;
-        commit(); proc = id; setupSlider(); renderProcs(); renderPredict(); update();
-      });
+      b.addEventListener("click", function () { go(id); });
       box.appendChild(b);
     });
+    var sb = document.createElement("button");
+    sb.type = "button"; sb.id = "proc-sum"; sb.setAttribute("role", "tab");
+    sb.setAttribute("aria-selected", String(view === "sum"));
+    sb.textContent = "한눈에 정리";
+    sb.addEventListener("click", function () { view = "sum"; showView(); renderProcs(); });
+    box.appendChild(sb);
     $("cond").textContent = PROCS[proc].cond;
     var ol = $("asks"); ol.textContent = "";
     PROCS[proc].asks.forEach(function (t) {
@@ -592,7 +714,7 @@
   }
 
   start = { P: INIT.P, V: INIT.V, T: INIT.T };
-  setupSlider(); renderProcs(); renderPredict(); renderLog(); update();
+  setupSlider(); renderProcs(); renderPredict(); renderLog(); renderSummary(); update();
   requestAnimationFrame(frame);
 })();
 </script>
