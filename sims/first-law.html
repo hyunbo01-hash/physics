@@ -50,7 +50,17 @@
 .verdict.ok { color: var(--work); } .verdict.no { color: var(--neg); }
 @media (max-width: 40rem) { .prow { grid-template-columns: minmax(0, 1fr); } }
 .msg { margin: 0; padding: 0.5rem 0.75rem; background: var(--bg); border-radius: 6px; font-size: 0.9375rem; }
-.asks { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem; }
+.asks { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; }
+.answer { margin-top: 0.375rem; }
+.answer summary {
+  display: inline-block; cursor: pointer; list-style: none; font-size: 0.875rem; font-weight: 600;
+  color: var(--accent); border: 1px solid var(--line); border-radius: 6px; padding: 0.25rem 0.75rem;
+}
+.answer summary::-webkit-details-marker { display: none; }
+.answer summary::after { content: " ▾"; }
+.answer[open] summary { background: var(--accent-soft); border-color: var(--accent); }
+.answer[open] summary::after { content: " ▴"; }
+.answer p { margin: 0.5rem 0 0; padding: 0.625rem 0.75rem; background: var(--bg); border-radius: 6px; font-size: 0.9375rem; }
 </style>
 </head>
 <body>
@@ -149,8 +159,10 @@
       cond: "등온 과정 — 온도가 일정하게 유지되며 압력과 부피가 변한다. (ΔU = 0)",
       scen: { label: "등온 팽창", dir: 1 },
       asks: [
-        "등온 팽창에서 기체의 온도는 그대로인데도 열을 흡수해야 하는 까닭은 무엇일까?",
-        "부피를 2배로 만들 때와 절반으로 만들 때, 일 W 의 크기를 비교해 보자."
+        { q: "등온 팽창에서 기체의 온도는 그대로인데도 열을 흡수해야 하는 까닭은 무엇일까?",
+          a: "기체가 팽창하면서 외부에 일을 한다(W > 0). 온도가 일정하려면 내부 에너지가 변하지 않아야 하므로(ΔU = 0), 외부에 한 일만큼 열을 흡수해야 한다. 즉 Q = W 이다." },
+        { q: "부피를 2배로 만들 때와 절반으로 만들 때, 일 W 의 크기를 비교해 보자.",
+          a: "크기는 같고 부호만 반대이다. 처음 상태에서 부피를 2배로 하면 W = +277 J, 절반으로 하면 W = −277 J 이다. 등온 과정에서는 부피가 변한 비율이 같으면 일의 크기도 같다." }
       ]
     },
     adia: {
@@ -158,8 +170,10 @@
       cond: "단열 과정 — 열의 출입 없이 기체가 압축되거나 팽창한다. (Q = 0)",
       scen: { label: "단열 압축", dir: -1 },
       asks: [
-        "공기 압축 점화 장치의 솜에 불이 붙는 까닭을 Q, W, ΔU 로 설명해 보자.",
-        "같은 부피까지 압축할 때, 단열 과정의 압력은 등온선(점선)보다 높을까 낮을까? 그 까닭은?"
+        { q: "공기 압축 점화 장치의 솜에 불이 붙는 까닭을 Q, W, ΔU 로 설명해 보자.",
+          a: "압축봉을 빠르게 누르면 열이 빠져나갈 시간이 없어 단열 압축이 된다(Q = 0). 기체가 외부로부터 일을 받으므로 W < 0 이고, ΔU = −W > 0 이 되어 내부 에너지가 증가한다. 그 결과 공기의 온도가 솜의 발화점보다 높아져 불이 붙는다." },
+        { q: "같은 부피까지 압축할 때, 단열 과정의 압력은 등온선(점선)보다 높을까 낮을까? 그 까닭은?",
+          a: "더 높다. 등온 압축에서는 받은 일만큼 열을 방출해 온도가 그대로이지만, 단열 압축에서는 받은 일이 모두 내부 에너지가 되어 온도가 올라간다. 부피가 같을 때 온도가 높을수록 압력이 크므로 단열 과정의 압력이 더 높다." }
       ]
     },
     isoP: {
@@ -167,8 +181,10 @@
       cond: "등압 과정 — 압력이 일정하게 유지되며 부피와 온도가 변한다.",
       scen: { label: "등압 팽창", dir: 1 },
       asks: [
-        "흡수한 열 Q 중에서 일 W 로 쓰인 비율은 얼마인가? 팽창 정도를 바꾸면 달라지는가?",
-        "압력–부피 그래프에서 넓이가 직사각형이 되는 까닭을 W = PΔV 로 설명해 보자."
+        { q: "흡수한 열 Q 중에서 일 W 로 쓰인 비율은 얼마인가? 팽창 정도를 바꾸면 달라지는가?",
+          a: "40 % 이다(W : Q = 2 : 5). 팽창 정도를 바꿔도 이 비율은 같다. 나머지 60 % 는 내부 에너지 증가(ΔU)에 쓰여 기체의 온도가 올라간다. (단원자 분자 이상 기체 기준)" },
+        { q: "압력–부피 그래프에서 넓이가 직사각형이 되는 까닭을 W = PΔV 로 설명해 보자.",
+          a: "압력이 일정하므로 그래프가 가로축에 나란한 직선이 된다. 그래프 아래 넓이는 세로(압력 P) × 가로(부피 변화 ΔV)인 직사각형의 넓이이고, 이것이 기체가 한 일 W = PΔV 이다." }
       ]
     },
     isoV: {
@@ -176,8 +192,10 @@
       cond: "등적 과정 — 부피가 일정하게 유지되며 압력과 온도가 변한다. (W = 0)",
       scen: { label: "등적 가열", dir: 1 },
       asks: [
-        "압력–부피 그래프 아래의 넓이가 0 인 것은 무엇을 뜻하는가?",
-        "같은 열을 가할 때 등압 과정과 등적 과정 중 온도가 더 많이 오르는 쪽은? 그 까닭은?"
+        { q: "압력–부피 그래프 아래의 넓이가 0 인 것은 무엇을 뜻하는가?",
+          a: "부피가 변하지 않으므로 기체가 한 일이 0 이라는 뜻이다(W = 0). 따라서 기체에 가한 열은 모두 내부 에너지 변화에 쓰인다(Q = ΔU)." },
+        { q: "같은 열을 가할 때 등압 과정과 등적 과정 중 온도가 더 많이 오르는 쪽은? 그 까닭은?",
+          a: "등적 과정이다. 등적 과정에서는 가한 열이 모두 내부 에너지 증가에 쓰이지만, 등압 과정에서는 열의 일부가 기체가 팽창하며 외부에 하는 일로 쓰이기 때문에 내부 에너지 증가량이 더 작다." }
       ]
     }
   };
@@ -272,7 +290,13 @@
     });
     $("cond").textContent = PROCS[proc].cond;
     var ol = $("asks"); ol.textContent = "";
-    PROCS[proc].asks.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; ol.appendChild(li); });
+    PROCS[proc].asks.forEach(function (t) {
+      var li = document.createElement("li"), q = document.createElement("div");
+      var d = document.createElement("details"), sm = document.createElement("summary"), a = document.createElement("p");
+      q.textContent = t.q; sm.textContent = "정답 보기"; a.textContent = t.a;
+      d.className = "answer"; d.appendChild(sm); d.appendChild(a);
+      li.appendChild(q); li.appendChild(d); ol.appendChild(li);
+    });
   }
 
   function renderPredict() {
