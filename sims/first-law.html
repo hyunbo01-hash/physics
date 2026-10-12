@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="피스톤 속 기체의 등온·단열·등압·등적 과정에서 Q = ΔU + W 를 확인하는 탐구 시뮬레이션">
+<title>열역학 제1법칙 탐구</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/sim.css">
+<style>
+.cond { margin: 0; color: var(--muted); }
+#cyl { aspect-ratio: 16 / 10; }
+#pv { aspect-ratio: 4 / 3; }
+.slider-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.slider-head label { font-weight: 600; }
+.slider-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.8125rem; }
+.status { font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; }
+
+.readouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin: 0; }
+.readouts div { display: flex; flex-direction: column; min-width: 0; }
+.readouts dt { color: var(--muted); font-size: 0.8125rem; }
+.readouts dd { margin: 0; font-family: var(--font-code); font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+.readouts small { font-size: 0.75rem; color: var(--muted); }
+
+.law { font-family: var(--font-code); font-size: clamp(1.125rem, 3.5vw, 1.5rem); font-variant-numeric: tabular-nums; margin: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; align-items: baseline; }
+.law .q { color: var(--heat); } .law .u { color: var(--accent); } .law .w { color: var(--work); }
+.bars { display: flex; flex-direction: column; gap: 0.5rem; }
+.bar { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr) 5rem; gap: 0.75rem; align-items: center; }
+.bar .name { font-weight: 500; }
+.bar .track { position: relative; height: 1.25rem; background: var(--bg); border-radius: 4px; }
+.bar .track::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
+.bar .fill { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.bar.q .fill { background: var(--heat); } .bar.u .fill { background: var(--accent); } .bar.w .fill { background: var(--work); }
+.bar .val { text-align: right; font-family: var(--font-code); font-variant-numeric: tabular-nums; }
+@media (max-width: 34rem) {
+  .bar { grid-template-columns: minmax(0, 1fr) 5rem; }
+  .bar .track { grid-column: 1 / -1; grid-row: 2; }
+}
+
+.predict { display: flex; flex-direction: column; gap: 0.625rem; }
+.prow { display: grid; grid-template-columns: 7.5rem minmax(0, auto) minmax(0, 1fr); gap: 0.5rem 0.75rem; align-items: center; }
+.prow .name { font-weight: 500; }
+.signs { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.signs button {
+  font: inherit; font-size: 0.875rem; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px; padding: 0.3125rem 0.625rem; cursor: pointer;
+}
+.signs button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.verdict { font-size: 0.875rem; font-weight: 600; }
+.verdict.ok { color: var(--work); } .verdict.no { color: var(--neg); }
+@media (max-width: 40rem) { .prow { grid-template-columns: minmax(0, 1fr); } }
+.msg { margin: 0; padding: 0.5rem 0.75rem; background: var(--bg); border-radius: 6px; font-size: 0.9375rem; }
+.asks { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="sim-head">
+    <a class="back" href="../index.html">← 물리 수업 자료실</a>
+    <span class="lesson-code">역학과 에너지 · II-1-03</span>
+    <h1>열역학 제1법칙 탐구</h1>
+    <p class="lead">피스톤 속 기체를 팽창·압축하거나 가열·냉각하면서, 기체가 받은 열 Q 가 내부 에너지 변화 ΔU 와 기체가 한 일 W 로 어떻게 나뉘는지 확인해 봅시다.</p>
+  </header>
+
+  <section class="panel" aria-label="열역학 과정 선택">
+    <div class="seg" id="procs" role="tablist" aria-label="열역학 과정"></div>
+    <p class="cond" id="cond"></p>
+  </section>
+
+  <div class="cols">
+    <section class="panel" aria-label="실린더와 피스톤">
+      <div class="status" id="status" aria-live="polite"></div>
+      <canvas id="cyl" role="img" aria-label="실린더 속 기체 분자와 피스톤 그림"></canvas>
+      <div>
+        <div class="slider-head">
+          <label for="ctrl" id="ctrl-label">부피 V</label>
+          <span class="num" id="ctrl-val"></span>
+        </div>
+        <input id="ctrl" type="range" min="1" max="4" step="0.01" value="2">
+        <div class="slider-ends"><span id="end-lo">◀ 압축</span><span id="end-hi">팽창 ▶</span></div>
+      </div>
+      <dl class="readouts">
+        <div><dt>압력 P</dt><dd><span id="r-p"></span> <small>×10⁵ Pa</small></dd></div>
+        <div><dt>부피 V</dt><dd><span id="r-v"></span> <small>×10⁻³ m³</small></dd></div>
+        <div><dt>온도 T</dt><dd><span id="r-t"></span> <small>K</small></dd></div>
+      </dl>
+      <div class="btn-row">
+        <button class="btn primary" type="button" id="btn-next" disabled>이 상태에서 다음 과정 잇기</button>
+        <button class="btn" type="button" id="btn-reset">처음 상태로</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="압력-부피 그래프">
+      <h2>압력–부피 그래프</h2>
+      <canvas id="pv" role="img" aria-label="압력-부피 그래프. 색칠한 넓이는 기체가 한 일"></canvas>
+      <p class="note">색칠한 넓이 = 기체가 한 일 W · 점선 = 시작 상태를 지나는 등온선</p>
+    </section>
+  </div>
+
+  <section class="panel" aria-label="열역학 제1법칙">
+    <h2>Q = ΔU + W</h2>
+    <p class="law" aria-live="polite">
+      <span class="q" id="law-q"></span><span>=</span><span class="u" id="law-u"></span><span>+</span><span class="w" id="law-w"></span>
+    </p>
+    <div class="bars">
+      <div class="bar q"><span class="name">기체가 받은 열 Q</span><div class="track"><div class="fill" id="bar-q"></div></div><span class="val" id="val-q"></span></div>
+      <div class="bar u"><span class="name">내부 에너지 변화 ΔU</span><div class="track"><div class="fill" id="bar-u"></div></div><span class="val" id="val-u"></span></div>
+      <div class="bar w"><span class="name">기체가 한 일 W</span><div class="track"><div class="fill" id="bar-w"></div></div><span class="val" id="val-w"></span></div>
+    </div>
+    <p class="note" id="scale-note"></p>
+  </section>
+
+  <div class="cols">
+    <section class="panel" aria-label="예상하기">
+      <h2 id="pred-title">예상하기</h2>
+      <p class="note">슬라이더를 움직이기 전에 부호를 먼저 예상해 봅시다.</p>
+      <div class="predict" id="predict"></div>
+      <p class="msg" id="pred-msg" aria-live="polite"></p>
+    </section>
+    <section class="panel" aria-label="생각해 보기">
+      <h2>생각해 보기</h2>
+      <ol class="asks" id="asks"></ol>
+    </section>
+  </div>
+
+  <section class="panel" aria-label="과정 기록">
+    <h2>과정 기록</h2>
+    <p class="note">「이 상태에서 다음 과정 잇기」를 누르거나 다른 과정을 고르면 방금 한 과정이 기록됩니다. 여러 과정을 이어 처음 상태로 돌아오면 ΔU 의 합은 얼마가 될까요?</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>과정</th><th>Q (J)</th><th>ΔU (J)</th><th>W (J)</th><th>P (×10⁵ Pa)</th><th>V (×10⁻³ m³)</th><th>T (K)</th></tr></thead>
+        <tbody id="log"></tbody>
+        <tfoot id="log-sum"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <footer>단원자 분자 이상 기체로 계산합니다 (U = 3/2·PV). 처음 상태: 2.0×10⁵ Pa, 2.0×10⁻³ m³, 300 K.</footer>
+</div>
+
+<script>
+(function () {
+  var G = 5 / 3, VAX = 4.5, PAX = 8, PMIN = 0.25, VMIN = 1, VMAX = 4;
+  var INIT = { P: 2, V: 2, T: 300 };
+
+  var PROCS = {
+    isoT: {
+      name: "등온", ctrl: "V",
+      cond: "등온 과정 — 온도가 일정하게 유지되며 압력과 부피가 변한다. (ΔU = 0)",
+      scen: { label: "등온 팽창", dir: 1 },
+      asks: [
+        "등온 팽창에서 기체의 온도는 그대로인데도 열을 흡수해야 하는 까닭은 무엇일까?",
+        "부피를 2배로 만들 때와 절반으로 만들 때, 일 W 의 크기를 비교해 보자."
+      ]
+    },
+    adia: {
+      name: "단열", ctrl: "V",
+      cond: "단열 과정 — 열의 출입 없이 기체가 압축되거나 팽창한다. (Q = 0)",
+      scen: { label: "단열 압축", dir: -1 },
+      asks: [
+        "공기 압축 점화 장치의 솜에 불이 붙는 까닭을 Q, W, ΔU 로 설명해 보자.",
+        "같은 부피까지 압축할 때, 단열 과정의 압력은 등온선(점선)보다 높을까 낮을까? 그 까닭은?"
+      ]
+    },
+    isoP: {
+      name: "등압", ctrl: "V",
+      cond: "등압 과정 — 압력이 일정하게 유지되며 부피와 온도가 변한다.",
+      scen: { label: "등압 팽창", dir: 1 },
+      asks: [
+        "흡수한 열 Q 중에서 일 W 로 쓰인 비율은 얼마인가? 팽창 정도를 바꾸면 달라지는가?",
+        "압력–부피 그래프에서 넓이가 직사각형이 되는 까닭을 W = PΔV 로 설명해 보자."
+      ]
+    },
+    isoV: {
+      name: "등적", ctrl: "P",
+      cond: "등적 과정 — 부피가 일정하게 유지되며 압력과 온도가 변한다. (W = 0)",
+      scen: { label: "등적 가열", dir: 1 },
+      asks: [
+        "압력–부피 그래프 아래의 넓이가 0 인 것은 무엇을 뜻하는가?",
+        "같은 열을 가할 때 등압 과정과 등적 과정 중 온도가 더 많이 오르는 쪽은? 그 까닭은?"
+      ]
+    }
+  };
+  var ORDER = ["isoT", "adia", "isoP", "isoV"];
+  var QUANT = [
+    { key: "Q", name: "열 Q", opts: ["+ 흡수", "0", "− 방출"] },
+    { key: "W", name: "일 W", opts: ["+ 일을 함", "0", "− 일을 받음"] },
+    { key: "dU", name: "ΔU", opts: ["+ 온도 상승", "0", "− 온도 하강"] }
+  ];
+
+  var start, cur, proc = "isoT", res, steps = [], segs = [], pred = {};
+  var $ = function (id) { return document.getElementById(id); };
+  var slider = $("ctrl");
+
+  /* 시작 상태 s 에서 과정 p 로 조절값 x(부피 또는 압력)까지 변했을 때의 상태와 에너지(J) */
+  function calc(p, s, x) {
+    var P, V, T, Q, W, dU;
+    if (p === "isoT") {
+      V = x; P = s.P * s.V / V; T = s.T;
+      W = 100 * s.P * s.V * Math.log(V / s.V); dU = 0; Q = W;
+    } else if (p === "adia") {
+      V = x; P = s.P * Math.pow(s.V / V, G); T = s.T * Math.pow(s.V / V, G - 1);
+      dU = 150 * (P * V - s.P * s.V); W = -dU; Q = 0;
+    } else if (p === "isoP") {
+      V = x; P = s.P; T = s.T * V / s.V;
+      W = 100 * s.P * (V - s.V); dU = 1.5 * W; Q = 2.5 * W;
+    } else {
+      P = x; V = s.V; T = s.T * P / s.P;
+      W = 0; dU = 150 * s.V * (P - s.P); Q = dU;
+    }
+    return { x: x, P: P, V: V, T: T, Q: Q, W: W, dU: dU };
+  }
+  function x0() { return PROCS[proc].ctrl === "V" ? start.V : start.P; }
+  function range(p, s) {
+    var lo, hi;
+    if (p === "isoT") { lo = Math.max(VMIN, s.P * s.V / PAX); hi = Math.min(VMAX, s.P * s.V / PMIN); }
+    else if (p === "adia") { lo = Math.max(VMIN, s.V * Math.pow(s.P / PAX, 1 / G)); hi = Math.min(VMAX, s.V * Math.pow(s.P / PMIN, 1 / G)); }
+    else if (p === "isoP") { lo = VMIN; hi = VMAX; }
+    else { lo = 0.5; hi = PAX; }
+    return [Math.ceil(lo * 100 - 1e-9) / 100, Math.floor(hi * 100 + 1e-9) / 100];
+  }
+  function curve(p, s, x) {
+    var a = p === "isoV" ? s.P : s.V, pts = [], n = 40;
+    for (var i = 0; i <= n; i++) { var r = calc(p, s, a + (x - a) * i / n); pts.push([r.V, r.P]); }
+    return pts;
+  }
+  function moved() { return res.x !== x0(); }
+  function dirWord() {
+    var up = res.x > x0();
+    return PROCS[proc].ctrl === "V" ? (up ? "팽창" : "압축") : (up ? "가열" : "냉각");
+  }
+  function r0(v) { var n = Math.round(v); return n === 0 ? 0 : n; }
+  function sg(n) { return n > 0 ? "+" + n : n < 0 ? "−" + Math.abs(n) : "0"; }
+  function sign(n) { return n > 0 ? 1 : n < 0 ? -1 : 0; }
+  /* 화면에 보이는 정수값: Q 는 반올림한 ΔU 와 W 의 합으로 맞춘다 */
+  function shown(r) { var u = r0(r.dU), w = r0(r.W); return { Q: u + w, dU: u, W: w }; }
+
+  function setupSlider() {
+    var rg = range(proc, start), a = x0();
+    slider.min = Math.min(rg[0], Math.floor(a * 100) / 100);
+    slider.max = Math.max(rg[1], Math.ceil(a * 100) / 100);
+    slider.value = a;
+    res = calc(proc, start, a);
+    cur = { P: res.P, V: res.V, T: res.T };
+    var isV = PROCS[proc].ctrl === "V";
+    $("ctrl-label").textContent = isV ? "부피 V 조절" : "압력 P 조절 (가열·냉각)";
+    $("end-lo").textContent = isV ? "◀ 압축" : "◀ 냉각";
+    $("end-hi").textContent = isV ? "팽창 ▶" : "가열 ▶";
+  }
+
+  function commit() {
+    if (!res || !moved()) return;
+    var s = shown(res);
+    steps.push({ name: PROCS[proc].name + " " + dirWord(), Q: s.Q, dU: s.dU, W: s.W, P: res.P, V: res.V, T: res.T });
+    segs.push(curve(proc, start, res.x));
+    start = { P: res.P, V: res.V, T: res.T };
+    renderLog();
+  }
+
+  function renderProcs() {
+    var box = $("procs"); box.textContent = "";
+    ORDER.forEach(function (id) {
+      var b = document.createElement("button");
+      b.type = "button"; b.id = "proc-" + id; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(id === proc));
+      b.textContent = PROCS[id].name + " 과정";
+      b.addEventListener("click", function () {
+        if (id === proc) return;
+        commit(); proc = id; setupSlider(); renderProcs(); renderPredict(); update();
+      });
+      box.appendChild(b);
+    });
+    $("cond").textContent = PROCS[proc].cond;
+    var ol = $("asks"); ol.textContent = "";
+    PROCS[proc].asks.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; ol.appendChild(li); });
+  }
+
+  function renderPredict() {
+    var sc = PROCS[proc].scen, box = $("predict");
+    $("pred-title").textContent = "예상하기: " + sc.label;
+    box.textContent = "";
+    pred[proc] = pred[proc] || {};
+    QUANT.forEach(function (q) {
+      var row = document.createElement("div"); row.className = "prow";
+      var nm = document.createElement("span"); nm.className = "name"; nm.textContent = q.name;
+      var sgn = document.createElement("div"); sgn.className = "signs"; sgn.setAttribute("role", "group"); sgn.setAttribute("aria-label", q.name + " 부호 예상");
+      [1, 0, -1].forEach(function (v, i) {
+        var b = document.createElement("button");
+        b.type = "button"; b.id = "pred-" + q.key + "-" + i; b.textContent = q.opts[i];
+        b.setAttribute("aria-pressed", String(pred[proc][q.key] === v));
+        b.addEventListener("click", function () { pred[proc][q.key] = v; renderPredict(); update(); });
+        sgn.appendChild(b);
+      });
+      var vd = document.createElement("span"); vd.className = "verdict"; vd.id = "verdict-" + q.key;
+      row.appendChild(nm); row.appendChild(sgn); row.appendChild(vd);
+      box.appendChild(row);
+    });
+  }
+
+  function renderLog() {
+    var tb = $("log"), tf = $("log-sum"); tb.textContent = ""; tf.textContent = "";
+    function row(cells, parent) {
+      var tr = document.createElement("tr");
+      cells.forEach(function (c) { var td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
+      parent.appendChild(tr);
+    }
+    if (!steps.length) {
+      var tr = document.createElement("tr"), td = document.createElement("td");
+      td.colSpan = 8; td.textContent = "아직 기록된 과정이 없습니다."; td.style.textAlign = "left"; td.style.color = "var(--muted)";
+      tr.appendChild(td); tb.appendChild(tr); return;
+    }
+    var sq = 0, su = 0, sw = 0;
+    steps.forEach(function (s, i) {
+      sq += s.Q; su += s.dU; sw += s.W;
+      row([i + 1, s.name, sg(s.Q), sg(s.dU), sg(s.W), s.P.toFixed(2), s.V.toFixed(2), Math.round(s.T)], tb);
+    });
+    row(["", "합계", sg(sq), sg(su), sg(sw), "", "", ""], tf);
+  }
+
+  function setBar(id, val, scale) {
+    var w = Math.min(50, Math.abs(val) / scale * 50), el = $(id);
+    el.style.width = w + "%";
+    el.style.left = (val >= 0 ? 50 : 50 - w) + "%";
+  }
+
+  function update() {
+    var s = shown(res), sc = PROCS[proc].scen;
+    $("status").textContent = moved() ? PROCS[proc].name + " " + dirWord() : PROCS[proc].name + " 과정 — 슬라이더를 움직여 보세요";
+    $("ctrl-val").textContent = PROCS[proc].ctrl === "V" ? res.V.toFixed(2) + " ×10⁻³ m³" : res.P.toFixed(2) + " ×10⁵ Pa";
+    $("r-p").textContent = res.P.toFixed(2);
+    $("r-v").textContent = res.V.toFixed(2);
+    $("r-t").textContent = Math.round(res.T);
+    $("law-q").textContent = "Q " + sg(s.Q) + " J";
+    $("law-u").textContent = "ΔU " + sg(s.dU) + " J";
+    $("law-w").textContent = "W " + sg(s.W) + " J";
+    $("val-q").textContent = sg(s.Q) + " J";
+    $("val-u").textContent = sg(s.dU) + " J";
+    $("val-w").textContent = sg(s.W) + " J";
+    var m = Math.max(200, Math.abs(s.Q), Math.abs(s.dU), Math.abs(s.W));
+    var pw = Math.pow(10, Math.floor(Math.log(m) / Math.LN10)), scale = pw * 10;
+    [1, 2, 5].some(function (k) { if (k * pw >= m) { scale = k * pw; return true; } return false; });
+    setBar("bar-q", s.Q, scale); setBar("bar-u", s.dU, scale); setBar("bar-w", s.W, scale);
+    $("scale-note").textContent = "막대 눈금: 가운데가 0, 양 끝이 ±" + scale + " J (오른쪽이 +)";
+    $("btn-next").disabled = !moved();
+
+    /* 예상과 비교 */
+    var p = pred[proc] || {}, all = QUANT.every(function (q) { return p[q.key] !== undefined; });
+    var d = sign(res.x - x0()), msg, show = all && d === sc.dir, hit = 0;
+    QUANT.forEach(function (q) {
+      var el = $("verdict-" + q.key); if (!el) return;
+      el.className = "verdict"; el.textContent = "";
+      if (!show) return;
+      var actual = sign(s[q.key]);
+      if (actual === p[q.key]) { hit++; el.classList.add("ok"); el.textContent = "예상과 같음"; }
+      else { el.classList.add("no"); el.textContent = "예상과 다름 → 실제 " + (actual > 0 ? "+" : actual < 0 ? "−" : "0"); }
+    });
+    if (!all) msg = "세 가지 부호를 모두 고른 뒤, 슬라이더를 움직여 확인해 보세요.";
+    else if (d === 0) msg = "이제 슬라이더를 움직여 " + sc.label + " 과정을 만들어 보세요.";
+    else if (d !== sc.dir) msg = "지금은 반대 방향입니다. " + sc.label + " 과정을 만들어 예상과 비교해 보세요.";
+    else msg = hit === 3 ? "세 가지 모두 예상과 같습니다. 그렇게 되는 까닭을 열역학 제1법칙으로 설명해 보세요."
+                         : "예상과 다른 것이 있습니다. 그래프와 막대를 보고 까닭을 찾아보세요.";
+    $("pred-msg").textContent = msg;
+  }
+
+  slider.addEventListener("input", function () {
+    var x = parseFloat(slider.value), a = x0();
+    if (Math.abs(x - a) < 0.006) x = a;
+    res = calc(proc, start, x);
+    cur = { P: res.P, V: res.V, T: res.T };
+    update();
+  });
+  $("btn-next").addEventListener("click", function () { commit(); setupSlider(); update(); });
+  $("btn-reset").addEventListener("click", function () {
+    start = { P: INIT.P, V: INIT.V, T: INIT.T }; steps = []; segs = [];
+    setupSlider(); renderLog(); update();
+  });
+
+  /* ---------- 그림 ---------- */
+  var FONT = "'IBM Plex Sans KR', 'Malgun Gothic', sans-serif";
+  var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var parts = [];
+  for (var i = 0; i < 36; i++) parts.push({ u: Math.random(), v: Math.random(), a: Math.random() * Math.PI * 2 });
+
+  function fit(cv) {
+    var w = cv.clientWidth, h = cv.clientHeight, dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+    return { c: c, w: w, h: h };
+  }
+  function arrow(c, x1, y1, x2, y2, color) {
+    var ang = Math.atan2(y2 - y1, x2 - x1), hd = 8;
+    c.strokeStyle = color; c.fillStyle = color; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(ang) * hd * 0.6, y2 - Math.sin(ang) * hd * 0.6); c.stroke();
+    c.beginPath(); c.moveTo(x2, y2);
+    c.lineTo(x2 - hd * Math.cos(ang - 0.5), y2 - hd * Math.sin(ang - 0.5));
+    c.lineTo(x2 - hd * Math.cos(ang + 0.5), y2 - hd * Math.sin(ang + 0.5));
+    c.closePath(); c.fill();
+  }
+  function tempColor(T, alpha) {
+    var t = Math.max(0, Math.min(1, (T - 150) / 600));
+    return "rgba(" + Math.round(37 + (220 - 37) * t) + "," + Math.round(99 + (38 - 99) * t) + "," + Math.round(235 + (38 - 235) * t) + "," + alpha + ")";
+  }
+
+  function drawCyl(col, dt) {
+    var f = fit($("cyl")), c = f.c, w = f.w, h = f.h;
+    var L = 18, R = w - 14, top = h * 0.24, bot = h * 0.68, mid = (top + bot) / 2, inner = R - L - 22;
+    var gw = cur.V / VAX * inner, px = L + gw, s = shown(res);
+
+    if (proc === "adia") {
+      c.fillStyle = col.line;
+      c.fillRect(L - 12, top - 12, R - L + 12, 10); c.fillRect(L - 12, bot + 2, R - L + 12, 10); c.fillRect(L - 12, top - 12, 10, bot - top + 24);
+    }
+    c.fillStyle = tempColor(cur.T, 0.1); c.fillRect(L, top, gw, bot - top);
+
+    var sp = 90 * Math.sqrt(cur.T / 300);
+    c.fillStyle = tempColor(cur.T, 1);
+    parts.forEach(function (p) {
+      if (!still) {
+        p.u += Math.cos(p.a) * sp * dt / gw; p.v += Math.sin(p.a) * sp * dt / (bot - top);
+        if (p.u < 0) { p.u = -p.u; p.a = Math.PI - p.a; } if (p.u > 1) { p.u = 2 - p.u; p.a = Math.PI - p.a; }
+        if (p.v < 0) { p.v = -p.v; p.a = -p.a; } if (p.v > 1) { p.v = 2 - p.v; p.a = -p.a; }
+        p.u = Math.max(0, Math.min(1, p.u)); p.v = Math.max(0, Math.min(1, p.v));
+      }
+      c.beginPath(); c.arc(L + 4 + p.u * Math.max(1, gw - 8), top + 4 + p.v * (bot - top - 8), 3.5, 0, Math.PI * 2); c.fill();
+    });
+
+    c.strokeStyle = col.ink; c.lineWidth = 3; c.lineJoin = "round";
+    c.beginPath(); c.moveTo(R, top); c.lineTo(L, top); c.lineTo(L, bot); c.lineTo(R, bot); c.stroke();
+    c.fillStyle = col.muted;
+    c.fillRect(px, top + 2, 12, bot - top - 4);
+    c.fillRect(px + 12, mid - 4, Math.max(0, R - px - 6), 8);
+
+    c.font = "500 13px " + FONT; c.textBaseline = "middle";
+    if (proc === "isoV") {
+      c.fillStyle = col.ink;
+      c.fillRect(px + 12, top + 2, 8, 8); c.fillRect(px + 12, bot - 10, 8, 8);
+      c.textAlign = "center"; c.fillText("피스톤 고정 (W = 0)", Math.max(70, Math.min(w - 70, px + 6)), top - 26);
+    } else if (s.W !== 0) {
+      var out = s.W > 0, ax = px + 22, color = out ? col.work : col.neg;
+      if (out) arrow(c, ax, mid - 22, ax + 42, mid - 22, color); else arrow(c, ax + 42, mid - 22, ax, mid - 22, color);
+      c.fillStyle = color; c.textAlign = "center";
+      c.fillText(out ? "기체가 일을 함 (W > 0)" : "기체가 일을 받음 (W < 0)", Math.max(92, Math.min(w - 92, px + 6)), top - 26);
+    }
+
+    var hy = bot + (proc === "adia" ? 16 : 8), cx = L + gw / 2;
+    c.textAlign = "center";
+    if (proc === "adia") {
+      c.fillStyle = col.muted; c.fillText("단열재 — 열 출입 없음 (Q = 0)", Math.max(110, Math.min(w - 110, cx)), hy + 16);
+    } else if (s.Q !== 0) {
+      var into = s.Q > 0;
+      [-1, 0, 1].forEach(function (k) {
+        var x = cx + k * Math.min(34, gw / 4);
+        if (into) arrow(c, x, hy + 28, x, hy + 2, col.heat); else arrow(c, x, hy + 2, x, hy + 28, col.heat);
+      });
+      c.fillStyle = col.heat;
+      c.fillText(into ? "열 흡수 (Q > 0)" : "열 방출 (Q < 0)", Math.max(60, Math.min(w - 60, cx)), hy + 44);
+    } else {
+      c.fillStyle = col.muted; c.fillText("열 출입 없음", Math.max(60, Math.min(w - 60, cx)), hy + 16);
+    }
+  }
+
+  function drawPV(col) {
+    var f = fit($("pv")), c = f.c, w = f.w, h = f.h;
+    var ml = 40, mr = 14, mt = 26, mb = 40, gw = w - ml - mr, gh = h - mt - mb;
+    function X(v) { return ml + v / VAX * gw; }
+    function Y(p) { return mt + gh - p / PAX * gh; }
+    c.font = "12px " + FONT; c.lineWidth = 1;
+    c.strokeStyle = col.line; c.fillStyle = col.muted;
+    c.textAlign = "right"; c.textBaseline = "middle";
+    for (var p = 0; p <= PAX; p += 2) { c.beginPath(); c.moveTo(ml, Y(p)); c.lineTo(ml + gw, Y(p)); c.stroke(); c.fillText(p, ml - 6, Y(p)); }
+    c.textAlign = "center"; c.textBaseline = "top";
+    for (var v = 0; v <= 4; v++) { c.beginPath(); c.moveTo(X(v), mt); c.lineTo(X(v), mt + gh); c.stroke(); c.fillText(v, X(v), mt + gh + 6); }
+    c.strokeStyle = col.ink; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(ml, mt); c.lineTo(ml, mt + gh); c.lineTo(ml + gw, mt + gh); c.stroke();
+    c.fillStyle = col.muted; c.textAlign = "left"; c.textBaseline = "alphabetic";
+    c.fillText("압력 (×10⁵ Pa)", 4, 14);
+    c.textAlign = "right"; c.fillText("부피 (×10⁻³ m³)", ml + gw, h - 6);
+
+    function line(pts) { c.beginPath(); pts.forEach(function (q, i) { if (i) c.lineTo(X(q[0]), Y(q[1])); else c.moveTo(X(q[0]), Y(q[1])); }); }
+
+    /* 시작 상태를 지나는 등온선 */
+    var k = start.P * start.V, iso = [];
+    for (var vv = Math.max(0.3, k / PAX); vv <= VAX; vv += 0.05) iso.push([vv, k / vv]);
+    c.save(); c.setLineDash([5, 5]); c.strokeStyle = col.muted; c.lineWidth = 1; line(iso); c.stroke(); c.restore();
+    c.fillStyle = col.muted; c.textAlign = "right"; c.textBaseline = "bottom";
+    c.fillText(Math.round(start.T) + " K 등온선", ml + gw - 2, Y(k / VAX) - 4);
+
+    /* 지나온 과정 */
+    c.strokeStyle = col.muted; c.lineWidth = 2;
+    segs.forEach(function (sgm) { line(sgm); c.stroke(); c.fillStyle = col.muted; c.beginPath(); c.arc(X(sgm[0][0]), Y(sgm[0][1]), 3, 0, Math.PI * 2); c.fill(); });
+
+    /* 지금 과정과 넓이 */
+    var pts = curve(proc, start, res.x), s = shown(res);
+    if (s.W !== 0) {
+      line(pts); c.lineTo(X(res.V), Y(0)); c.lineTo(X(start.V), Y(0)); c.closePath();
+      c.save(); c.globalAlpha = 0.22; c.fillStyle = s.W > 0 ? col.work : col.neg; c.fill(); c.restore();
+      c.fillStyle = s.W > 0 ? col.work : col.neg; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "600 13px " + FONT;
+      var ymid = Y(Math.min(start.P, res.P) / 2);
+      if (Math.abs(X(res.V) - X(start.V)) > 44) c.fillText(s.W > 0 ? "W > 0" : "W < 0", (X(res.V) + X(start.V)) / 2, ymid);
+    }
+    c.strokeStyle = col.accent; c.lineWidth = 3; line(pts); c.stroke();
+    c.fillStyle = col.surface; c.strokeStyle = col.accent; c.lineWidth = 2;
+    c.beginPath(); c.arc(X(start.V), Y(start.P), 5, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = col.accent; c.beginPath(); c.arc(X(res.V), Y(res.P), 6, 0, Math.PI * 2); c.fill();
+  }
+
+  var last = 0;
+  function frame(ms) {
+    var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms;
+    var cs = getComputedStyle(document.documentElement), col = {};
+    ["ink", "muted", "line", "accent", "surface", "heat", "work", "neg"].forEach(function (n) { col[n] = cs.getPropertyValue("--" + n).trim(); });
+    drawCyl(col, dt); drawPV(col);
+    requestAnimationFrame(frame);
+  }
+
+  start = { P: INIT.P, V: INIT.V, T: INIT.T };
+  setupSlider(); renderProcs(); renderPredict(); renderLog(); update();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

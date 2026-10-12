@@ -33,5 +33,8 @@ window.SITE = {
   ],
 
   items: [
+    { title: "열역학 제1법칙 탐구", type: "sim", subject: "mechanics", lesson: "II-1-03",
+      href: "sims/first-law.html",
+      desc: "등온·단열·등압·등적 과정에서 Q = ΔU + W 확인하기", added: "2026-10-12" }
   ]
 };
