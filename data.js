@@ -8,6 +8,7 @@
     subject: "mechanics",                  // 아래 subjects 의 id
     lesson:  "III-2-03",                   // 자료 앞에 붙는 차시 코드 (생략 가능)
     href:    "sims/standing-wave.html",    // 이 폴더 기준 상대 경로
+    thumb:   "assets/thumbs/standing-wave.svg", // 카드에 보이는 그림 (16:9, 생략 가능)
     desc:    "줄과 관에서 정상파 만들기",  // 한 줄 설명 (생략 가능)
     added:   "2026-10-12" }                // 올린 날짜
 */
@@ -34,7 +35,7 @@ window.SITE = {
 
   items: [
     { title: "열역학 제1법칙 탐구", type: "sim", subject: "mechanics", lesson: "II-1-03",
-      href: "sims/first-law.html",
+      href: "sims/first-law.html", thumb: "assets/thumbs/first-law.svg",
       desc: "등온·단열·등압·등적 과정에서 Q = ΔU + W 확인하기", added: "2026-10-12" }
   ]
 };

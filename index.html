@@ -186,6 +186,29 @@ h1 {
 .material .desc { flex-basis: 100%; color: var(--muted); font-size: 0.875rem; }
 .material .new { font-size: 0.75rem; font-weight: 600; color: var(--mark); }
 
+/* 자료 카드 */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); gap: 1rem; }
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--ink);
+  min-width: 0;
+}
+.card:hover { border-color: var(--accent); }
+.card .thumb { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--accent-soft); border-bottom: 1px solid var(--line); }
+.card-body { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.75rem 1rem 1rem; }
+.card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.card .kind { font-size: 0.75rem; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 0.0625rem 0.375rem; }
+.card .new { font-size: 0.75rem; font-weight: 600; color: var(--mark); }
+.card-title { font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; line-height: 1.3; }
+.card:hover .card-title { color: var(--accent); }
+.card .desc { color: var(--muted); font-size: 0.875rem; }
+
 .blank {
   background: var(--surface);
   border: 1px dashed var(--line);
@@ -227,7 +250,7 @@ footer { color: var(--muted); font-size: 0.8125rem; border-top: 1px solid var(--
   <footer id="foot"></footer>
 </div>
 
-<script src="data.js"></script>
+<script src="data.js?v=2"></script>
 <script>
 (function () {
   var S = window.SITE;
@@ -283,6 +306,18 @@ footer { color: var(--muted); font-size: 0.8125rem; border-top: 1px solid var(--
       h("span", { class: "name", text: it.title }),
       isNew(it) ? h("span", { class: "new", text: "새로 올림" }) : null,
       it.desc ? h("span", { class: "desc", text: it.desc }) : null);
+  }
+
+  function card(it) {
+    return h("a", { class: "card", href: it.href },
+      it.thumb ? h("img", { class: "thumb", src: it.thumb, alt: "", loading: "lazy" }) : h("div", { class: "thumb" }),
+      h("div", { class: "card-body" },
+        h("div", { class: "card-meta" },
+          h("span", { class: "kind", text: S.types[it.type] || it.type }),
+          it.lesson ? h("span", { class: "code", text: it.lesson }) : null,
+          isNew(it) ? h("span", { class: "new", text: "새로 올림" }) : null),
+        h("span", { class: "card-title", text: it.title }),
+        it.desc ? h("span", { class: "desc", text: it.desc }) : null));
   }
 
   function lessonRow(code, title, list) {
@@ -354,11 +389,11 @@ footer { color: var(--muted); font-size: 0.8125rem; border-top: 1px solid var(--
 
     var rest = shown.filter(function (it) { return !placed[items.indexOf(it)]; });
     if (rest.length) {
-      var ol = h("ol", { class: "lessons" });
-      rest.forEach(function (it) { ol.appendChild(lessonRow(it.lesson || "", "", [it])); });
+      var grid = h("div", { class: "cards" });
+      rest.forEach(function (it) { grid.appendChild(card(it)); });
       var sec = h("section", { class: "unit" });
       if (subj.units && subj.units.length) sec.appendChild(h("h2", null, h("span", { text: "기타 자료" })));
-      sec.appendChild(ol);
+      sec.appendChild(grid);
       shelf.appendChild(sec);
     }
 
