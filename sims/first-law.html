@@ -8,59 +8,66 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="../assets/sim.css">
 <style>
-.cond { margin: 0; color: var(--muted); }
-#cyl { aspect-ratio: 16 / 10; }
-#pv { aspect-ratio: 4 / 3; }
+.cond { margin: 0; color: var(--muted); font-size: 0.9375rem; }
+
+/* 실험대: 왼쪽 실린더, 오른쪽 그래프 */
+.stage-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.25rem 1rem; }
+.status { font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; }
+.state { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0; font-size: 0.875rem; color: var(--muted); }
+.state b { font-family: var(--font-code); font-weight: 500; font-size: 1rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+#cyl { aspect-ratio: 2 / 1; touch-action: pan-y; }
+.graph-box { position: relative; flex: 1; min-height: 17rem; }
+.graph-box canvas { position: absolute; inset: 0; height: 100%; }
+@media (max-width: 56rem) { .graph-box { flex: none; min-height: 0; aspect-ratio: 4 / 3; } #cyl { aspect-ratio: 16 / 10; } }
 .slider-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
 .slider-head label { font-weight: 600; }
 .slider-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.8125rem; }
-.status { font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; }
+.under { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; }
 
-.readouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin: 0; }
-.readouts div { display: flex; flex-direction: column; min-width: 0; }
-.readouts dt { color: var(--muted); font-size: 0.8125rem; }
-.readouts dd { margin: 0; font-family: var(--font-code); font-size: 1.125rem; font-variant-numeric: tabular-nums; }
-.readouts small { font-size: 0.75rem; color: var(--muted); }
-
-.law { font-family: var(--font-code); font-size: clamp(1.125rem, 3.5vw, 1.5rem); font-variant-numeric: tabular-nums; margin: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; align-items: baseline; }
-.law .q { color: var(--heat); } .law .u { color: var(--accent); } .law .w { color: var(--work); }
-.bars { display: flex; flex-direction: column; gap: 0.5rem; }
-.bar { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr) 5rem; gap: 0.75rem; align-items: center; }
-.bar .name { font-weight: 500; }
-.bar .track { position: relative; height: 1.25rem; background: var(--bg); border-radius: 4px; }
-.bar .track::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
-.bar .fill { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
-.bar.q .fill { background: var(--heat); } .bar.u .fill { background: var(--accent); } .bar.w .fill { background: var(--work); }
-.bar .val { text-align: right; font-family: var(--font-code); font-variant-numeric: tabular-nums; }
-@media (max-width: 34rem) {
-  .bar { grid-template-columns: minmax(0, 1fr) 5rem; }
-  .bar .track { grid-column: 1 / -1; grid-row: 2; }
+/* 에너지 식: [Q] = [ΔU] + [W] */
+.law { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 0.5rem; align-items: stretch; }
+.op { align-self: center; font-family: var(--font-code); font-size: 1.75rem; color: var(--muted); }
+.tile { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.75rem 0.875rem; border-radius: 10px; border: 1px solid var(--line); border-top: 4px solid var(--c); min-width: 0; }
+.tile.q { --c: var(--heat); } .tile.u { --c: var(--inner); } .tile.w { --c: var(--work); }
+.tile .name { font-size: 0.875rem; font-weight: 600; color: var(--c); }
+.tile .val { font-family: var(--font-code); font-size: clamp(1.375rem, 3.2vw, 1.875rem); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tile .mean { font-size: 0.875rem; color: var(--muted); }
+.track { position: relative; height: 0.625rem; background: var(--bg); border-radius: 999px; margin-block: 0.125rem; }
+.track::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: var(--muted); }
+.fill { position: absolute; top: 0; bottom: 0; border-radius: 999px; background: var(--c); }
+@media (max-width: 40rem) {
+  .law { grid-template-columns: auto minmax(0, 1fr); }
+  .law .tile.q { grid-column: 1 / -1; }
+  .op { font-size: 1.25rem; }
+  .tile { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0.125rem 0.75rem; padding: 0.5rem 0.75rem; }
+  .tile .track { flex-basis: 100%; order: 3; }
 }
 
+/* 활동 */
 .predict { display: flex; flex-direction: column; gap: 0.625rem; }
-.prow { display: grid; grid-template-columns: 7.5rem minmax(0, auto) minmax(0, 1fr); gap: 0.5rem 0.75rem; align-items: center; }
-.prow .name { font-weight: 500; }
+.prow { display: grid; grid-template-columns: 4.5rem minmax(0, auto) minmax(0, 1fr); gap: 0.5rem 0.75rem; align-items: center; }
+.prow .name { font-weight: 600; }
 .signs { display: flex; flex-wrap: wrap; gap: 0.375rem; }
 .signs button {
-  font: inherit; font-size: 0.875rem; color: var(--ink); background: var(--surface);
-  border: 1px solid var(--line); border-radius: 6px; padding: 0.3125rem 0.625rem; cursor: pointer;
+  font: inherit; font-size: 0.9375rem; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; padding: 0.375rem 0.75rem; cursor: pointer;
 }
 .signs button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
 .verdict { font-size: 0.875rem; font-weight: 600; }
-.verdict.ok { color: var(--work); } .verdict.no { color: var(--neg); }
-@media (max-width: 40rem) { .prow { grid-template-columns: minmax(0, 1fr); } }
-.msg { margin: 0; padding: 0.5rem 0.75rem; background: var(--bg); border-radius: 6px; font-size: 0.9375rem; }
-.asks { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; }
+.verdict.ok { color: var(--work); } .verdict.no { color: var(--heat); }
+@media (max-width: 40rem) { .prow { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; } }
+.msg { margin: 0; padding: 0.5rem 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.9375rem; }
+.asks { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; max-width: 46rem; }
 .answer { margin-top: 0.375rem; }
 .answer summary {
   display: inline-block; cursor: pointer; list-style: none; font-size: 0.875rem; font-weight: 600;
-  color: var(--accent); border: 1px solid var(--line); border-radius: 6px; padding: 0.25rem 0.75rem;
+  color: var(--accent); border: 1px solid var(--line); border-radius: 8px; padding: 0.25rem 0.75rem;
 }
 .answer summary::-webkit-details-marker { display: none; }
 .answer summary::after { content: " ▾"; }
 .answer[open] summary { background: var(--accent-soft); border-color: var(--accent); }
 .answer[open] summary::after { content: " ▴"; }
-.answer p { margin: 0.5rem 0 0; padding: 0.625rem 0.75rem; background: var(--bg); border-radius: 6px; font-size: 0.9375rem; }
+.answer p { margin: 0.5rem 0 0; padding: 0.625rem 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.9375rem; }
 </style>
 </head>
 <body>
@@ -69,79 +76,87 @@
     <a class="back" href="../index.html">← 물리 수업 자료실</a>
     <span class="lesson-code">역학과 에너지 · II-1-03</span>
     <h1>열역학 제1법칙 탐구</h1>
-    <p class="lead">피스톤 속 기체를 팽창·압축하거나 가열·냉각하면서, 기체가 받은 열 Q 가 내부 에너지 변화 ΔU 와 기체가 한 일 W 로 어떻게 나뉘는지 확인해 봅시다.</p>
   </header>
 
-  <section class="panel" aria-label="열역학 과정 선택">
-    <div class="seg" id="procs" role="tablist" aria-label="열역학 과정"></div>
-    <p class="cond" id="cond"></p>
-  </section>
+  <div class="seg" id="procs" role="tablist" aria-label="열역학 과정"></div>
 
   <div class="cols">
     <section class="panel" aria-label="실린더와 피스톤">
-      <div class="status" id="status" aria-live="polite"></div>
+      <div class="stage-head">
+        <div class="status" id="status" aria-live="polite"></div>
+        <p class="state">
+          <span>압력 <b id="r-p"></b> ×10⁵ Pa</span>
+          <span>부피 <b id="r-v"></b> ×10⁻³ m³</span>
+          <span>온도 <b id="r-t"></b> K</span>
+        </p>
+      </div>
+      <p class="cond" id="cond"></p>
       <canvas id="cyl" role="img" aria-label="실린더 속 기체 분자와 피스톤 그림"></canvas>
       <div>
         <div class="slider-head">
-          <label for="ctrl" id="ctrl-label">부피 V</label>
-          <span class="num" id="ctrl-val"></span>
+          <label for="ctrl" id="ctrl-label">부피 조절</label>
+          <span class="note" id="drag-hint">피스톤을 직접 끌어도 됩니다</span>
         </div>
         <input id="ctrl" type="range" min="1" max="4" step="0.01" value="2">
         <div class="slider-ends"><span id="end-lo">◀ 압축</span><span id="end-hi">팽창 ▶</span></div>
       </div>
-      <dl class="readouts">
-        <div><dt>압력 P</dt><dd><span id="r-p"></span> <small>×10⁵ Pa</small></dd></div>
-        <div><dt>부피 V</dt><dd><span id="r-v"></span> <small>×10⁻³ m³</small></dd></div>
-        <div><dt>온도 T</dt><dd><span id="r-t"></span> <small>K</small></dd></div>
-      </dl>
-      <div class="btn-row">
-        <button class="btn primary" type="button" id="btn-next" disabled>이 상태에서 다음 과정 잇기</button>
-        <button class="btn" type="button" id="btn-reset">처음 상태로</button>
+      <div class="under">
+        <div class="btn-row">
+          <button class="btn primary" type="button" id="btn-next" disabled>여기서 다음 과정 잇기</button>
+          <button class="btn" type="button" id="btn-reset">처음 상태로</button>
+        </div>
       </div>
     </section>
 
     <section class="panel" aria-label="압력-부피 그래프">
-      <h2>압력–부피 그래프</h2>
-      <canvas id="pv" role="img" aria-label="압력-부피 그래프. 색칠한 넓이는 기체가 한 일"></canvas>
-      <p class="note">색칠한 넓이 = 기체가 한 일 W · 점선 = 시작 상태를 지나는 등온선</p>
+      <div class="stage-head">
+        <h2>압력–부피 그래프</h2>
+        <span class="note">색칠한 넓이 = 기체가 한 일 W</span>
+      </div>
+      <div class="graph-box"><canvas id="pv" role="img" aria-label="압력-부피 그래프. 색칠한 넓이는 기체가 한 일"></canvas></div>
     </section>
   </div>
 
-  <section class="panel" aria-label="열역학 제1법칙">
-    <h2>Q = ΔU + W</h2>
-    <p class="law" aria-live="polite">
-      <span class="q" id="law-q"></span><span>=</span><span class="u" id="law-u"></span><span>+</span><span class="w" id="law-w"></span>
-    </p>
-    <div class="bars">
-      <div class="bar q"><span class="name">기체가 받은 열 Q</span><div class="track"><div class="fill" id="bar-q"></div></div><span class="val" id="val-q"></span></div>
-      <div class="bar u"><span class="name">내부 에너지 변화 ΔU</span><div class="track"><div class="fill" id="bar-u"></div></div><span class="val" id="val-u"></span></div>
-      <div class="bar w"><span class="name">기체가 한 일 W</span><div class="track"><div class="fill" id="bar-w"></div></div><span class="val" id="val-w"></span></div>
+  <section class="panel" aria-label="열역학 제1법칙 Q = ΔU + W">
+    <div class="law" aria-live="polite">
+      <div class="tile q"><span class="name">기체가 받은 열 Q</span><span class="val" id="val-q"></span><div class="track"><div class="fill" id="bar-q"></div></div><span class="mean" id="mean-q"></span></div>
+      <span class="op" aria-hidden="true">=</span>
+      <div class="tile u"><span class="name">내부 에너지 변화 ΔU</span><span class="val" id="val-u"></span><div class="track"><div class="fill" id="bar-u"></div></div><span class="mean" id="mean-u"></span></div>
+      <span class="op" aria-hidden="true">+</span>
+      <div class="tile w"><span class="name">기체가 한 일 W</span><span class="val" id="val-w"></span><div class="track"><div class="fill" id="bar-w"></div></div><span class="mean" id="mean-w"></span></div>
     </div>
-    <p class="note" id="scale-note"></p>
   </section>
 
-  <div class="cols">
-    <section class="panel" aria-label="예상하기">
-      <h2 id="pred-title">예상하기</h2>
-      <p class="note">슬라이더를 움직이기 전에 부호를 먼저 예상해 봅시다.</p>
-      <div class="predict" id="predict"></div>
-      <p class="msg" id="pred-msg" aria-live="polite"></p>
-    </section>
-    <section class="panel" aria-label="생각해 보기">
-      <h2>생각해 보기</h2>
-      <ol class="asks" id="asks"></ol>
-    </section>
-  </div>
+  <section class="panel" aria-label="탐구 활동">
+    <div class="seg" id="acts" role="tablist" aria-label="탐구 활동">
+      <button type="button" role="tab" id="tab-predict" data-act="predict" aria-selected="true">예상하기</button>
+      <button type="button" role="tab" id="tab-think" data-act="think" aria-selected="false">생각해 보기</button>
+      <button type="button" role="tab" id="tab-log" data-act="log" aria-selected="false">과정 기록</button>
+    </div>
 
-  <section class="panel" aria-label="과정 기록">
-    <h2>과정 기록</h2>
-    <p class="note">「이 상태에서 다음 과정 잇기」를 누르거나 다른 과정을 고르면 방금 한 과정이 기록됩니다. 여러 과정을 이어 처음 상태로 돌아오면 ΔU 의 합은 얼마가 될까요?</p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>#</th><th>과정</th><th>Q (J)</th><th>ΔU (J)</th><th>W (J)</th><th>P (×10⁵ Pa)</th><th>V (×10⁻³ m³)</th><th>T (K)</th></tr></thead>
-        <tbody id="log"></tbody>
-        <tfoot id="log-sum"></tfoot>
-      </table>
+    <div id="act-predict">
+      <div class="predict">
+        <p class="note" id="pred-title"></p>
+        <div class="predict" id="predict"></div>
+        <p class="msg" id="pred-msg" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div id="act-think" hidden>
+      <ol class="asks" id="asks"></ol>
+    </div>
+
+    <div id="act-log" hidden>
+      <div class="predict">
+        <p class="note">「여기서 다음 과정 잇기」를 누르거나 다른 과정을 고르면 방금 한 과정이 기록됩니다. 여러 과정을 이어 처음 상태로 돌아오면 ΔU 의 합은 얼마가 될까요?</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>과정</th><th>Q (J)</th><th>ΔU (J)</th><th>W (J)</th><th>P (×10⁵ Pa)</th><th>V (×10⁻³ m³)</th><th>T (K)</th></tr></thead>
+            <tbody id="log"></tbody>
+            <tfoot id="log-sum"></tfoot>
+          </table>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -156,7 +171,7 @@
   var PROCS = {
     isoT: {
       name: "등온", ctrl: "V",
-      cond: "등온 과정 — 온도가 일정하게 유지되며 압력과 부피가 변한다. (ΔU = 0)",
+      cond: "온도가 일정하게 유지되며 압력과 부피가 변한다.",
       scen: { label: "등온 팽창", dir: 1 },
       asks: [
         { q: "등온 팽창에서 기체의 온도는 그대로인데도 열을 흡수해야 하는 까닭은 무엇일까?",
@@ -167,7 +182,7 @@
     },
     adia: {
       name: "단열", ctrl: "V",
-      cond: "단열 과정 — 열의 출입 없이 기체가 압축되거나 팽창한다. (Q = 0)",
+      cond: "열의 출입 없이 기체가 압축되거나 팽창한다.",
       scen: { label: "단열 압축", dir: -1 },
       asks: [
         { q: "공기 압축 점화 장치의 솜에 불이 붙는 까닭을 Q, W, ΔU 로 설명해 보자.",
@@ -178,7 +193,7 @@
     },
     isoP: {
       name: "등압", ctrl: "V",
-      cond: "등압 과정 — 압력이 일정하게 유지되며 부피와 온도가 변한다.",
+      cond: "압력이 일정하게 유지되며 부피와 온도가 변한다.",
       scen: { label: "등압 팽창", dir: 1 },
       asks: [
         { q: "흡수한 열 Q 중에서 일 W 로 쓰인 비율은 얼마인가? 팽창 정도를 바꾸면 달라지는가?",
@@ -189,7 +204,7 @@
     },
     isoV: {
       name: "등적", ctrl: "P",
-      cond: "등적 과정 — 부피가 일정하게 유지되며 압력과 온도가 변한다. (W = 0)",
+      cond: "부피가 일정하게 유지되며 압력과 온도가 변한다.",
       scen: { label: "등적 가열", dir: 1 },
       asks: [
         { q: "압력–부피 그래프 아래의 넓이가 0 인 것은 무엇을 뜻하는가?",
@@ -205,8 +220,13 @@
     { key: "W", name: "일 W", opts: ["+ 일을 함", "0", "− 일을 받음"] },
     { key: "dU", name: "ΔU", opts: ["+ 온도 상승", "0", "− 온도 하강"] }
   ];
+  var MEAN = {
+    Q: ["열을 방출한다", "열의 출입이 없다", "열을 흡수한다"],
+    dU: ["온도가 내려간다", "온도가 일정하다", "온도가 올라간다"],
+    W: ["외부에서 일을 받는다", "일을 하지 않는다", "외부에 일을 한다"]
+  };
 
-  var start, cur, proc = "isoT", res, steps = [], segs = [], pred = {};
+  var start, cur, proc = "isoT", res, steps = [], segs = [], pred = {}, geo = null;
   var $ = function (id) { return document.getElementById(id); };
   var slider = $("ctrl");
 
@@ -261,9 +281,17 @@
     res = calc(proc, start, a);
     cur = { P: res.P, V: res.V, T: res.T };
     var isV = PROCS[proc].ctrl === "V";
-    $("ctrl-label").textContent = isV ? "부피 V 조절" : "압력 P 조절 (가열·냉각)";
+    $("ctrl-label").textContent = isV ? "부피 조절" : "가열·냉각 (압력 조절)";
     $("end-lo").textContent = isV ? "◀ 압축" : "◀ 냉각";
     $("end-hi").textContent = isV ? "팽창 ▶" : "가열 ▶";
+    $("drag-hint").hidden = !isV;
+  }
+  function setX(x) {
+    var a = x0();
+    if (Math.abs(x - a) < 0.006) x = a;
+    res = calc(proc, start, x);
+    cur = { P: res.P, V: res.V, T: res.T };
+    update();
   }
 
   function commit() {
@@ -301,7 +329,7 @@
 
   function renderPredict() {
     var sc = PROCS[proc].scen, box = $("predict");
-    $("pred-title").textContent = "예상하기: " + sc.label;
+    $("pred-title").textContent = sc.label + "일 때 세 값의 부호를 먼저 예상한 뒤, 직접 움직여 확인해 봅시다.";
     box.textContent = "";
     pred[proc] = pred[proc] || {};
     QUANT.forEach(function (q) {
@@ -323,6 +351,7 @@
 
   function renderLog() {
     var tb = $("log"), tf = $("log-sum"); tb.textContent = ""; tf.textContent = "";
+    $("tab-log").textContent = steps.length ? "과정 기록 (" + steps.length + ")" : "과정 기록";
     function row(cells, parent) {
       var tr = document.createElement("tr");
       cells.forEach(function (c) { var td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
@@ -349,22 +378,20 @@
 
   function update() {
     var s = shown(res), sc = PROCS[proc].scen;
-    $("status").textContent = moved() ? PROCS[proc].name + " " + dirWord() : PROCS[proc].name + " 과정 — 슬라이더를 움직여 보세요";
-    $("ctrl-val").textContent = PROCS[proc].ctrl === "V" ? res.V.toFixed(2) + " ×10⁻³ m³" : res.P.toFixed(2) + " ×10⁵ Pa";
+    $("status").textContent = moved() ? PROCS[proc].name + " " + dirWord() : PROCS[proc].name + " 과정";
     $("r-p").textContent = res.P.toFixed(2);
     $("r-v").textContent = res.V.toFixed(2);
     $("r-t").textContent = Math.round(res.T);
-    $("law-q").textContent = "Q " + sg(s.Q) + " J";
-    $("law-u").textContent = "ΔU " + sg(s.dU) + " J";
-    $("law-w").textContent = "W " + sg(s.W) + " J";
     $("val-q").textContent = sg(s.Q) + " J";
     $("val-u").textContent = sg(s.dU) + " J";
     $("val-w").textContent = sg(s.W) + " J";
+    $("mean-q").textContent = MEAN.Q[sign(s.Q) + 1];
+    $("mean-u").textContent = MEAN.dU[sign(s.dU) + 1];
+    $("mean-w").textContent = MEAN.W[sign(s.W) + 1];
     var m = Math.max(200, Math.abs(s.Q), Math.abs(s.dU), Math.abs(s.W));
     var pw = Math.pow(10, Math.floor(Math.log(m) / Math.LN10)), scale = pw * 10;
     [1, 2, 5].some(function (k) { if (k * pw >= m) { scale = k * pw; return true; } return false; });
     setBar("bar-q", s.Q, scale); setBar("bar-u", s.dU, scale); setBar("bar-w", s.W, scale);
-    $("scale-note").textContent = "막대 눈금: 가운데가 0, 양 끝이 ±" + scale + " J (오른쪽이 +)";
     $("btn-next").disabled = !moved();
 
     /* 예상과 비교 */
@@ -378,32 +405,56 @@
       if (actual === p[q.key]) { hit++; el.classList.add("ok"); el.textContent = "예상과 같음"; }
       else { el.classList.add("no"); el.textContent = "예상과 다름 → 실제 " + (actual > 0 ? "+" : actual < 0 ? "−" : "0"); }
     });
-    if (!all) msg = "세 가지 부호를 모두 고른 뒤, 슬라이더를 움직여 확인해 보세요.";
-    else if (d === 0) msg = "이제 슬라이더를 움직여 " + sc.label + " 과정을 만들어 보세요.";
+    if (!all) msg = "세 가지 부호를 모두 골라 주세요.";
+    else if (d === 0) msg = "이제 " + sc.label + " 과정을 만들어 보세요.";
     else if (d !== sc.dir) msg = "지금은 반대 방향입니다. " + sc.label + " 과정을 만들어 예상과 비교해 보세요.";
     else msg = hit === 3 ? "세 가지 모두 예상과 같습니다. 그렇게 되는 까닭을 열역학 제1법칙으로 설명해 보세요."
-                         : "예상과 다른 것이 있습니다. 그래프와 막대를 보고 까닭을 찾아보세요.";
+                         : "예상과 다른 것이 있습니다. 그림과 그래프를 보고 까닭을 찾아보세요.";
     $("pred-msg").textContent = msg;
   }
 
-  slider.addEventListener("input", function () {
-    var x = parseFloat(slider.value), a = x0();
-    if (Math.abs(x - a) < 0.006) x = a;
-    res = calc(proc, start, x);
-    cur = { P: res.P, V: res.V, T: res.T };
-    update();
-  });
+  slider.addEventListener("input", function () { setX(parseFloat(slider.value)); });
   $("btn-next").addEventListener("click", function () { commit(); setupSlider(); update(); });
   $("btn-reset").addEventListener("click", function () {
     start = { P: INIT.P, V: INIT.V, T: INIT.T }; steps = []; segs = [];
     setupSlider(); renderLog(); update();
   });
+  Array.prototype.forEach.call($("acts").children, function (b) {
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call($("acts").children, function (o) {
+        o.setAttribute("aria-selected", String(o === b));
+        $("act-" + o.getAttribute("data-act")).hidden = o !== b;
+      });
+    });
+  });
+
+  /* 피스톤을 직접 끌기 */
+  var cyl = $("cyl"), dragging = false;
+  function nearPiston(e) {
+    if (!geo || PROCS[proc].ctrl !== "V") return false;
+    var r = cyl.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    return Math.abs(x - (geo.px + 8)) < 28 && y > geo.top - 10 && y < geo.bot + 10;
+  }
+  function dragTo(e) {
+    var r = cyl.getBoundingClientRect(), v = (e.clientX - r.left - geo.L - 8) / geo.inner * VAX;
+    v = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), Math.round(v * 100) / 100));
+    slider.value = v; setX(v);
+  }
+  cyl.addEventListener("pointerdown", function (e) {
+    if (!nearPiston(e)) return;
+    dragging = true; cyl.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  cyl.addEventListener("pointermove", function (e) {
+    if (dragging) dragTo(e);
+    else cyl.style.cursor = nearPiston(e) ? "ew-resize" : "";
+  });
+  ["pointerup", "pointercancel"].forEach(function (n) { cyl.addEventListener(n, function () { dragging = false; }); });
 
   /* ---------- 그림 ---------- */
   var FONT = "'IBM Plex Sans KR', 'Malgun Gothic', sans-serif";
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var parts = [];
-  for (var i = 0; i < 36; i++) parts.push({ u: Math.random(), v: Math.random(), a: Math.random() * Math.PI * 2 });
+  for (var i = 0; i < 40; i++) parts.push({ u: Math.random(), v: Math.random(), a: Math.random() * Math.PI * 2 });
 
   function fit(cv) {
     var w = cv.clientWidth, h = cv.clientHeight, dpr = window.devicePixelRatio || 1;
@@ -412,31 +463,34 @@
     return { c: c, w: w, h: h };
   }
   function arrow(c, x1, y1, x2, y2, color) {
-    var ang = Math.atan2(y2 - y1, x2 - x1), hd = 8;
-    c.strokeStyle = color; c.fillStyle = color; c.lineWidth = 3;
-    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(ang) * hd * 0.6, y2 - Math.sin(ang) * hd * 0.6); c.stroke();
+    var ang = Math.atan2(y2 - y1, x2 - x1), hd = 10;
+    c.strokeStyle = color; c.fillStyle = color; c.lineWidth = 4; c.lineCap = "round";
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(ang) * hd * 0.7, y2 - Math.sin(ang) * hd * 0.7); c.stroke();
     c.beginPath(); c.moveTo(x2, y2);
     c.lineTo(x2 - hd * Math.cos(ang - 0.5), y2 - hd * Math.sin(ang - 0.5));
     c.lineTo(x2 - hd * Math.cos(ang + 0.5), y2 - hd * Math.sin(ang + 0.5));
     c.closePath(); c.fill();
   }
+  /* 온도에 따른 기체 색: 파랑(차가움) → 빨강(뜨거움) */
   function tempColor(T, alpha) {
-    var t = Math.max(0, Math.min(1, (T - 150) / 600));
-    return "rgba(" + Math.round(37 + (220 - 37) * t) + "," + Math.round(99 + (38 - 99) * t) + "," + Math.round(235 + (38 - 235) * t) + "," + alpha + ")";
+    var t = Math.max(0, Math.min(1, (T - 150) / 550));
+    return "rgba(" + Math.round(59 + (239 - 59) * t) + "," + Math.round(130 + (68 - 130) * t) + "," + Math.round(246 + (68 - 246) * t) + "," + alpha + ")";
   }
+  function clampX(x, half, w) { return Math.max(half, Math.min(w - half, x)); }
 
   function drawCyl(col, dt) {
-    var f = fit($("cyl")), c = f.c, w = f.w, h = f.h;
-    var L = 18, R = w - 14, top = h * 0.24, bot = h * 0.68, mid = (top + bot) / 2, inner = R - L - 22;
+    var f = fit(cyl), c = f.c, w = f.w, h = f.h;
+    var L = 20, R = w - 12, top = h * 0.2, bot = h * 0.7, mid = (top + bot) / 2, inner = R - L - 30;
     var gw = cur.V / VAX * inner, px = L + gw, s = shown(res);
+    geo = { L: L, inner: inner, px: px, top: top, bot: bot };
 
     if (proc === "adia") {
       c.fillStyle = col.line;
-      c.fillRect(L - 12, top - 12, R - L + 12, 10); c.fillRect(L - 12, bot + 2, R - L + 12, 10); c.fillRect(L - 12, top - 12, 10, bot - top + 24);
+      c.fillRect(L - 14, top - 14, R - L + 14, 12); c.fillRect(L - 14, bot + 2, R - L + 14, 12); c.fillRect(L - 14, top - 14, 12, bot - top + 28);
     }
-    c.fillStyle = tempColor(cur.T, 0.1); c.fillRect(L, top, gw, bot - top);
+    c.fillStyle = tempColor(cur.T, 0.18); c.fillRect(L, top, gw, bot - top);
 
-    var sp = 90 * Math.sqrt(cur.T / 300);
+    var sp = 100 * Math.sqrt(cur.T / 300);
     c.fillStyle = tempColor(cur.T, 1);
     parts.forEach(function (p) {
       if (!still) {
@@ -445,59 +499,60 @@
         if (p.v < 0) { p.v = -p.v; p.a = -p.a; } if (p.v > 1) { p.v = 2 - p.v; p.a = -p.a; }
         p.u = Math.max(0, Math.min(1, p.u)); p.v = Math.max(0, Math.min(1, p.v));
       }
-      c.beginPath(); c.arc(L + 4 + p.u * Math.max(1, gw - 8), top + 4 + p.v * (bot - top - 8), 3.5, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(L + 6 + p.u * Math.max(1, gw - 12), top + 6 + p.v * (bot - top - 12), 4, 0, Math.PI * 2); c.fill();
     });
 
-    c.strokeStyle = col.ink; c.lineWidth = 3; c.lineJoin = "round";
+    /* 실린더 벽, 피스톤 */
+    c.strokeStyle = col.ink; c.lineWidth = 3; c.lineJoin = "round"; c.lineCap = "butt";
     c.beginPath(); c.moveTo(R, top); c.lineTo(L, top); c.lineTo(L, bot); c.lineTo(R, bot); c.stroke();
     c.fillStyle = col.muted;
-    c.fillRect(px, top + 2, 12, bot - top - 4);
-    c.fillRect(px + 12, mid - 4, Math.max(0, R - px - 6), 8);
+    c.fillRect(px + 16, mid - 5, Math.max(0, R - px - 10), 10);
+    c.fillStyle = col.ink;
+    c.fillRect(px, top + 2, 16, bot - top - 4);
+    c.strokeStyle = col.surface; c.lineWidth = 2;
+    [-8, 0, 8].forEach(function (dy) { c.beginPath(); c.moveTo(px + 5, mid + dy); c.lineTo(px + 11, mid + dy); c.stroke(); });
 
-    c.font = "500 13px " + FONT; c.textBaseline = "middle";
+    c.font = "600 14px " + FONT; c.textBaseline = "middle"; c.textAlign = "center";
+    var ly = top / 2;
     if (proc === "isoV") {
       c.fillStyle = col.ink;
-      c.fillRect(px + 12, top + 2, 8, 8); c.fillRect(px + 12, bot - 10, 8, 8);
-      c.textAlign = "center"; c.fillText("피스톤 고정 (W = 0)", Math.max(70, Math.min(w - 70, px + 6)), top - 26);
+      c.fillRect(px + 16, top + 2, 10, 10); c.fillRect(px + 16, bot - 12, 10, 10);
+      c.fillStyle = col.muted; c.fillText("피스톤 고정 — 일을 하지 않음", clampX(px + 8, 100, w), ly);
     } else if (s.W !== 0) {
-      var out = s.W > 0, ax = px + 22, color = out ? col.work : col.neg;
-      if (out) arrow(c, ax, mid - 22, ax + 42, mid - 22, color); else arrow(c, ax + 42, mid - 22, ax, mid - 22, color);
-      c.fillStyle = color; c.textAlign = "center";
-      c.fillText(out ? "기체가 일을 함 (W > 0)" : "기체가 일을 받음 (W < 0)", Math.max(92, Math.min(w - 92, px + 6)), top - 26);
+      var out = s.W > 0, ax = px + 26;
+      if (out) arrow(c, ax, mid - 26, ax + 46, mid - 26, col.work); else arrow(c, ax + 46, mid - 26, ax, mid - 26, col.work);
+      c.fillStyle = col.work;
+      c.fillText(out ? "기체가 외부에 일을 함" : "기체가 외부에서 일을 받음", clampX(px + 8, 96, w), ly);
     }
 
-    var hy = bot + (proc === "adia" ? 16 : 8), cx = L + gw / 2;
-    c.textAlign = "center";
+    var hy = bot + (proc === "adia" ? 18 : 8), cx = L + gw / 2, by = (hy + h) / 2 + 12;
     if (proc === "adia") {
-      c.fillStyle = col.muted; c.fillText("단열재 — 열 출입 없음 (Q = 0)", Math.max(110, Math.min(w - 110, cx)), hy + 16);
+      c.fillStyle = col.muted; c.fillText("단열재 — 열 출입 없음", clampX(cx, 80, w), (bot + 14 + h) / 2);
     } else if (s.Q !== 0) {
-      var into = s.Q > 0;
+      var into = s.Q > 0, y1 = hy + 4, y2 = Math.min(hy + 30, h - 26);
       [-1, 0, 1].forEach(function (k) {
-        var x = cx + k * Math.min(34, gw / 4);
-        if (into) arrow(c, x, hy + 28, x, hy + 2, col.heat); else arrow(c, x, hy + 2, x, hy + 28, col.heat);
+        var x = cx + k * Math.min(40, gw / 4);
+        if (into) arrow(c, x, y2, x, y1, col.heat); else arrow(c, x, y1, x, y2, col.heat);
       });
-      c.fillStyle = col.heat;
-      c.fillText(into ? "열 흡수 (Q > 0)" : "열 방출 (Q < 0)", Math.max(60, Math.min(w - 60, cx)), hy + 44);
-    } else {
-      c.fillStyle = col.muted; c.fillText("열 출입 없음", Math.max(60, Math.min(w - 60, cx)), hy + 16);
+      c.fillStyle = col.heat; c.fillText(into ? "열 흡수" : "열 방출", clampX(cx, 40, w), Math.min(h - 10, y2 + 14));
     }
   }
 
   function drawPV(col) {
     var f = fit($("pv")), c = f.c, w = f.w, h = f.h;
-    var ml = 40, mr = 14, mt = 26, mb = 40, gw = w - ml - mr, gh = h - mt - mb;
+    var ml = 44, mr = 16, mt = 28, mb = 44, gw = w - ml - mr, gh = h - mt - mb;
     function X(v) { return ml + v / VAX * gw; }
     function Y(p) { return mt + gh - p / PAX * gh; }
-    c.font = "12px " + FONT; c.lineWidth = 1;
+    c.font = "13px " + FONT; c.lineWidth = 1; c.lineCap = "butt";
     c.strokeStyle = col.line; c.fillStyle = col.muted;
     c.textAlign = "right"; c.textBaseline = "middle";
-    for (var p = 0; p <= PAX; p += 2) { c.beginPath(); c.moveTo(ml, Y(p)); c.lineTo(ml + gw, Y(p)); c.stroke(); c.fillText(p, ml - 6, Y(p)); }
+    for (var p = 0; p <= PAX; p += 2) { c.beginPath(); c.moveTo(ml, Y(p)); c.lineTo(ml + gw, Y(p)); c.stroke(); c.fillText(p, ml - 8, Y(p)); }
     c.textAlign = "center"; c.textBaseline = "top";
-    for (var v = 0; v <= 4; v++) { c.beginPath(); c.moveTo(X(v), mt); c.lineTo(X(v), mt + gh); c.stroke(); c.fillText(v, X(v), mt + gh + 6); }
-    c.strokeStyle = col.ink; c.lineWidth = 1.5;
+    for (var v = 0; v <= 4; v++) { c.beginPath(); c.moveTo(X(v), mt); c.lineTo(X(v), mt + gh); c.stroke(); c.fillText(v, X(v), mt + gh + 8); }
+    c.strokeStyle = col.ink; c.lineWidth = 2;
     c.beginPath(); c.moveTo(ml, mt); c.lineTo(ml, mt + gh); c.lineTo(ml + gw, mt + gh); c.stroke();
     c.fillStyle = col.muted; c.textAlign = "left"; c.textBaseline = "alphabetic";
-    c.fillText("압력 (×10⁵ Pa)", 4, 14);
+    c.fillText("압력 (×10⁵ Pa)", 4, 16);
     c.textAlign = "right"; c.fillText("부피 (×10⁻³ m³)", ml + gw, h - 6);
 
     function line(pts) { c.beginPath(); pts.forEach(function (q, i) { if (i) c.lineTo(X(q[0]), Y(q[1])); else c.moveTo(X(q[0]), Y(q[1])); }); }
@@ -505,34 +560,33 @@
     /* 시작 상태를 지나는 등온선 */
     var k = start.P * start.V, iso = [];
     for (var vv = Math.max(0.3, k / PAX); vv <= VAX; vv += 0.05) iso.push([vv, k / vv]);
-    c.save(); c.setLineDash([5, 5]); c.strokeStyle = col.muted; c.lineWidth = 1; line(iso); c.stroke(); c.restore();
+    c.save(); c.setLineDash([5, 5]); c.strokeStyle = col.muted; c.lineWidth = 1.5; line(iso); c.stroke(); c.restore();
     c.fillStyle = col.muted; c.textAlign = "right"; c.textBaseline = "bottom";
-    c.fillText(Math.round(start.T) + " K 등온선", ml + gw - 2, Y(k / VAX) - 4);
+    c.fillText(Math.round(start.T) + " K 등온선", ml + gw - 4, Y(k / VAX) - 5);
 
     /* 지나온 과정 */
-    c.strokeStyle = col.muted; c.lineWidth = 2;
-    segs.forEach(function (sgm) { line(sgm); c.stroke(); c.fillStyle = col.muted; c.beginPath(); c.arc(X(sgm[0][0]), Y(sgm[0][1]), 3, 0, Math.PI * 2); c.fill(); });
+    c.strokeStyle = col.muted; c.lineWidth = 2.5;
+    segs.forEach(function (sgm) { line(sgm); c.stroke(); c.fillStyle = col.muted; c.beginPath(); c.arc(X(sgm[0][0]), Y(sgm[0][1]), 3.5, 0, Math.PI * 2); c.fill(); });
 
     /* 지금 과정과 넓이 */
     var pts = curve(proc, start, res.x), s = shown(res);
     if (s.W !== 0) {
       line(pts); c.lineTo(X(res.V), Y(0)); c.lineTo(X(start.V), Y(0)); c.closePath();
-      c.save(); c.globalAlpha = 0.22; c.fillStyle = s.W > 0 ? col.work : col.neg; c.fill(); c.restore();
-      c.fillStyle = s.W > 0 ? col.work : col.neg; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "600 13px " + FONT;
-      var ymid = Y(Math.min(start.P, res.P) / 2);
-      if (Math.abs(X(res.V) - X(start.V)) > 44) c.fillText(s.W > 0 ? "W > 0" : "W < 0", (X(res.V) + X(start.V)) / 2, ymid);
+      c.save(); c.globalAlpha = 0.25; c.fillStyle = col.work; c.fill(); c.restore();
+      c.fillStyle = col.work; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "600 14px " + FONT;
+      if (Math.abs(X(res.V) - X(start.V)) > 70) c.fillText("W = " + sg(s.W) + " J", (X(res.V) + X(start.V)) / 2, Y(Math.min(start.P, res.P) / 2));
     }
-    c.strokeStyle = col.accent; c.lineWidth = 3; line(pts); c.stroke();
-    c.fillStyle = col.surface; c.strokeStyle = col.accent; c.lineWidth = 2;
-    c.beginPath(); c.arc(X(start.V), Y(start.P), 5, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.fillStyle = col.accent; c.beginPath(); c.arc(X(res.V), Y(res.P), 6, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = col.accent; c.lineWidth = 4; c.lineJoin = "round"; line(pts); c.stroke();
+    c.fillStyle = col.surface; c.strokeStyle = col.accent; c.lineWidth = 2.5;
+    c.beginPath(); c.arc(X(start.V), Y(start.P), 6, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = col.accent; c.beginPath(); c.arc(X(res.V), Y(res.P), 7, 0, Math.PI * 2); c.fill();
   }
 
   var last = 0;
   function frame(ms) {
     var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms;
     var cs = getComputedStyle(document.documentElement), col = {};
-    ["ink", "muted", "line", "accent", "surface", "heat", "work", "neg"].forEach(function (n) { col[n] = cs.getPropertyValue("--" + n).trim(); });
+    ["ink", "muted", "line", "accent", "surface", "heat", "work", "inner"].forEach(function (n) { col[n] = cs.getPropertyValue("--" + n).trim(); });
     drawCyl(col, dt); drawPV(col);
     requestAnimationFrame(frame);
   }
