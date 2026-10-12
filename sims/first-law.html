@@ -15,7 +15,7 @@
 .status { font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; }
 .state { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0; font-size: 0.875rem; color: var(--muted); }
 .state b { font-family: var(--font-code); font-weight: 500; font-size: 1rem; color: var(--ink); font-variant-numeric: tabular-nums; }
-#cyl { aspect-ratio: 2 / 1; touch-action: pan-y; }
+#cyl { aspect-ratio: 2.3 / 1; touch-action: pan-y; }
 .graph-box { position: relative; flex: 1; min-height: 17rem; }
 .graph-box canvas { position: absolute; inset: 0; height: 100%; }
 @media (max-width: 56rem) { .graph-box { flex: none; min-height: 0; aspect-ratio: 4 / 3; } #cyl { aspect-ratio: 16 / 10; } }
@@ -27,7 +27,7 @@
 /* 에너지 식: [Q] = [ΔU] + [W] */
 .law { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 0.5rem; align-items: stretch; }
 .op { align-self: center; font-family: var(--font-code); font-size: 1.75rem; color: var(--muted); }
-.tile { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.75rem 0.875rem; border-radius: 10px; border: 1px solid var(--line); border-top: 4px solid var(--c); min-width: 0; }
+.tile { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0.875rem; border-radius: 10px; border: 1px solid var(--line); border-top: 4px solid var(--c); min-width: 0; }
 .tile.q { --c: var(--heat); } .tile.u { --c: var(--inner); } .tile.w { --c: var(--work); }
 .tile .name { font-size: 0.875rem; font-weight: 600; color: var(--c); }
 .tile .val { font-family: var(--font-code); font-size: clamp(1.375rem, 3.2vw, 1.875rem); font-variant-numeric: tabular-nums; line-height: 1.2; }
