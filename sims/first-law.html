@@ -53,6 +53,11 @@
 .sum-table .lawcell { font-family: var(--font-code); white-space: nowrap; }
 .hq { color: var(--heat); } .hu { color: var(--inner); } .hw { color: var(--work); }
 .sum-table td b { font-family: var(--font-code); font-weight: 500; font-size: 1.0625rem; }
+.sum-top [data-id] { cursor: pointer; transition: opacity 0.15s; }
+.sum-top .sg { outline-offset: 4px; }
+.sum-top.has-pick [data-id]:not(.on) { opacity: 0.22; }
+.sum-top.has-pick tr.on { background: var(--accent-soft); }
+@media (prefers-reduced-motion: reduce) { .sum-top [data-id] { transition: none; } }
 .sum-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
 .sum-card .keep { font-size: 0.875rem; color: var(--muted); }
 .sum-card .biglaw { font-family: var(--font-code); font-size: 1.5rem; line-height: 1.2; }
@@ -195,6 +200,7 @@
           </table>
         </div>
         <p class="note">압축하거나 냉각할 때는 표의 + 와 − 가 서로 바뀐다.</p>
+        <p class="note">그래프의 선이나 표의 줄을 누르면 그 과정만 진하게 보입니다. 한 번 더 누르면 원래대로 돌아옵니다.</p>
       </section>
     </div>
     <div class="sum-cards" id="sum-cards"></div>
@@ -379,6 +385,7 @@
     rows.textContent = ""; cards.textContent = "";
     ORDER.forEach(function (id) {
       var p = PROCS[id], tr = el("tr");
+      tr.setAttribute("data-id", id); tr.tabIndex = 0;
       tr.appendChild(el("td", "", p.name + " " + p.plus));
       tr.appendChild(el("td", "", p.keep));
       ["Q", "dU", "W"].forEach(function (k, i) {
@@ -412,14 +419,32 @@
     ORDER.forEach(function (id) {
       var pts = curve(id, INIT, 4), last = pts[pts.length - 1];
       var d = pts.map(function (q, i) { return (i ? "L" : "M") + X(q[0]).toFixed(1) + " " + Y(q[1]).toFixed(1); }).join("");
+      svg += '<g class="sg" data-id="' + id + '" tabindex="0" role="button" aria-label="' + PROCS[id].name + ' 과정 강조">';
+      svg += '<path d="' + d + '" fill="none" stroke="transparent" stroke-width="22" stroke-linecap="round"/>';
       svg += '<path d="' + d + '" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arr)"/>';
       svg += id === "isoV"
         ? '<text x="' + X(last[0]) + '" y="' + (Y(last[1]) - 12) + '" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">' + PROCS[id].name + '</text>'
         : '<text x="' + (X(last[0]) + 10) + '" y="' + (Y(last[1]) + 5) + '" font-size="15" font-weight="600" fill="var(--ink)">' + PROCS[id].name + '</text>';
+      svg += '</g>';
     });
     svg += '<circle cx="' + X(INIT.V) + '" cy="' + Y(INIT.P) + '" r="6" fill="var(--surface)" stroke="var(--accent)" stroke-width="2.5"/>' +
       '<text x="' + (X(INIT.V) - 12) + '" y="' + (Y(INIT.P) + 5) + '" text-anchor="end" font-size="14" fill="var(--muted)">처음 상태</text></svg>';
     $("sum-graph").innerHTML = svg;
+
+    /* 그래프의 선이나 표의 줄을 누르면 그 과정만 진하게 */
+    var picked = null, top = document.querySelector(".sum-top");
+    var marks = top.querySelectorAll("[data-id]");
+    function pick(id) {
+      picked = picked === id ? null : id;
+      top.classList.toggle("has-pick", picked !== null);
+      Array.prototype.forEach.call(marks, function (m) { m.classList.toggle("on", m.getAttribute("data-id") === picked); });
+    }
+    Array.prototype.forEach.call(marks, function (m) {
+      m.addEventListener("click", function () { pick(m.getAttribute("data-id")); });
+      m.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(m.getAttribute("data-id")); }
+      });
+    });
   }
 
   function renderProcs() {
