@@ -154,11 +154,11 @@
         <div class="b-stage" id="b-law" hidden>
           <div>
             <div class="slider-head"><label for="b-q">기체가 받은 열 Q</label><span class="num" id="b-q-val"></span></div>
-            <input id="b-q" type="range" min="-200" max="200" step="20" value="100">
+            <input id="b-q" type="range" min="-100" max="100" step="10" value="100">
           </div>
           <div>
             <div class="slider-head"><label for="b-w">기체가 한 일 W</label><span class="num" id="b-w-val"></span></div>
-            <input id="b-w" type="range" min="-200" max="200" step="20" value="40">
+            <input id="b-w" type="range" min="-100" max="100" step="10" value="40">
           </div>
           <div class="law">
             <div class="tile q"><span class="name">받은 열 Q</span><span class="val" id="b-val-q"></span><div class="track"><div class="fill" id="b-bar-q"></div></div></div>
@@ -903,7 +903,7 @@
     var Q = parseFloat($("b-q").value), W = parseFloat($("b-w").value), U = Q - W;
     $("b-q-val").textContent = sg(Q) + " J"; $("b-w-val").textContent = sg(W) + " J";
     $("b-val-q").textContent = sg(Q) + " J"; $("b-val-u").textContent = sg(U) + " J"; $("b-val-w").textContent = sg(W) + " J";
-    setBar("b-bar-q", Q, 400); setBar("b-bar-u", U, 400); setBar("b-bar-w", W, 400);
+    setBar("b-bar-q", Q, 200); setBar("b-bar-u", U, 200); setBar("b-bar-w", W, 200);
     var a = Q > 0 ? "열 " + Q + " J 를 받고" : Q < 0 ? "열 " + (-Q) + " J 를 내보내고" : "열이 드나들지 않고";
     var b = W > 0 ? "외부에 일 " + W + " J 를 하면" : W < 0 ? "외부에서 일 " + (-W) + " J 를 받으면" : "일을 하지 않으면";
     var r = U > 0 ? "내부 에너지가 " + U + " J 늘어나요. → 온도가 올라가요." : U < 0 ? "내부 에너지가 " + (-U) + " J 줄어들어요. → 온도가 내려가요." : "내부 에너지는 그대로예요. → 온도가 변하지 않아요.";
