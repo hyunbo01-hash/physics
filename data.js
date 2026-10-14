@@ -40,6 +40,6 @@ window.SITE = {
       desc: "온도·열·압력·기체 법칙·일·부호·그래프, 미리 알아야 할 개념 7가지", added: "2026-10-12" },
     { title: "열역학 제1법칙 탐구", type: "sim", subject: "mechanics", lesson: "II-1-03",
       href: "sims/first-law.html", thumb: "assets/thumbs/first-law.svg",
-      desc: "등온·단열·등압·등적 과정에서 Q = ΔU + W 확인하기", added: "2026-10-12" }
+      desc: "기초 다지기부터 등온·단열·등압·등적 탐구, 한눈에 정리까지", added: "2026-10-12" }
   ]
 };

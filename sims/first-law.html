@@ -90,6 +90,46 @@
 .answer[open] summary { background: var(--accent-soft); border-color: var(--accent); }
 .answer[open] summary::after { content: " ▴"; }
 .answer p { margin: 0.5rem 0 0; padding: 0.625rem 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.9375rem; }
+
+/* 기초 다지기 */
+@media (max-width: 40rem) { #procs { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.b-steps button { display: flex; justify-content: center; align-items: baseline; gap: 0.375rem; }
+.b-steps .n { font-family: var(--font-code); font-size: 0.875rem; }
+.b-steps button.done .n { color: var(--work); }
+@media (max-width: 52rem) { .b-steps .nm { display: none; } }
+#b-scene { aspect-ratio: 2.3 / 1; }
+@media (max-width: 56rem) { #b-scene { aspect-ratio: 16 / 10; } }
+.b-gauge { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.75rem; align-items: center; font-size: 0.875rem; font-weight: 600; color: var(--inner); }
+.meter { height: 0.75rem; background: var(--bg); border-radius: 999px; overflow: hidden; }
+.meter div { height: 100%; background: var(--inner); border-radius: 999px; }
+.b-stage { display: flex; flex-direction: column; gap: 0.75rem; }
+.b-procs { display: flex; flex-direction: column; gap: 0.5rem; }
+.b-procs button {
+  font: inherit; text-align: left; color: var(--ink); background: var(--surface); cursor: pointer;
+  border: 1px solid var(--line); border-radius: 10px; padding: 0.625rem 1rem; display: flex; flex-direction: column;
+}
+.b-procs button:hover { border-color: var(--accent); }
+.b-procs b { font-family: var(--font-display); font-size: 1.0625rem; }
+.b-procs span { color: var(--muted); font-size: 0.9375rem; }
+.b-text { gap: 0.875rem; }
+.b-count { font-family: var(--font-code); font-size: 0.8125rem; color: var(--muted); }
+.b-title { font-size: clamp(1.25rem, 3vw, 1.5rem); line-height: 1.3; }
+#b-body { display: flex; flex-direction: column; gap: 0.5rem; font-size: 1.0625rem; }
+#b-body p { margin: 0; }
+#b-body ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.b-key { margin: 0; padding: 0.75rem 1rem; background: var(--accent-soft); border-radius: 10px; font-weight: 600; font-size: 1.0625rem; }
+.b-check { border-top: 1px solid var(--line); padding-top: 0.875rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.b-check .q { margin: 0; font-weight: 600; }
+.b-opts { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.b-opts button {
+  font: inherit; font-size: 1.0625rem; color: var(--ink); background: var(--surface); cursor: pointer;
+  border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem 1.125rem;
+}
+.b-opts button:hover { border-color: var(--accent); }
+.b-opts button.right { border-color: var(--work); color: var(--work); font-weight: 600; }
+.b-opts button.wrong { border-color: var(--heat); color: var(--heat); }
+.b-why { margin: 0; font-size: 0.9375rem; }
+.b-nav { display: flex; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-top: auto; }
 </style>
 </head>
 <body>
@@ -103,7 +143,55 @@
 
   <div class="seg" id="procs" role="tablist" aria-label="열역학 과정"></div>
 
-  <div class="stack" id="lab">
+  <div class="stack" id="basics">
+    <div class="seg b-steps" id="b-steps" role="tablist" aria-label="기초 다지기 단계"></div>
+    <div class="cols">
+      <section class="panel" aria-label="직접 해 보기">
+        <div class="b-stage" id="b-scene-wrap">
+          <canvas id="b-scene" role="img" aria-label="실린더 속 기체 분자와 피스톤 그림"></canvas>
+          <div class="b-gauge"><span>내부 에너지</span><div class="meter"><div id="b-meter"></div></div></div>
+        </div>
+        <div class="b-stage" id="b-law" hidden>
+          <div>
+            <div class="slider-head"><label for="b-q">기체가 받은 열 Q</label><span class="num" id="b-q-val"></span></div>
+            <input id="b-q" type="range" min="-200" max="200" step="20" value="100">
+          </div>
+          <div>
+            <div class="slider-head"><label for="b-w">기체가 한 일 W</label><span class="num" id="b-w-val"></span></div>
+            <input id="b-w" type="range" min="-200" max="200" step="20" value="40">
+          </div>
+          <div class="law">
+            <div class="tile q"><span class="name">받은 열 Q</span><span class="val" id="b-val-q"></span><div class="track"><div class="fill" id="b-bar-q"></div></div></div>
+            <span class="op" aria-hidden="true">=</span>
+            <div class="tile u"><span class="name">내부 에너지 변화 ΔU</span><span class="val" id="b-val-u"></span><div class="track"><div class="fill" id="b-bar-u"></div></div></div>
+            <span class="op" aria-hidden="true">+</span>
+            <div class="tile w"><span class="name">한 일 W</span><span class="val" id="b-val-w"></span><div class="track"><div class="fill" id="b-bar-w"></div></div></div>
+          </div>
+        </div>
+        <div class="b-procs" id="b-guide" hidden></div>
+        <div class="btn-row" id="b-actions"></div>
+        <p class="msg" id="b-out" aria-live="polite"></p>
+      </section>
+
+      <section class="panel b-text" aria-label="설명과 확인 문제">
+        <span class="b-count" id="b-count"></span>
+        <h2 class="b-title" id="b-title"></h2>
+        <div id="b-body"></div>
+        <p class="b-key" id="b-key"></p>
+        <div class="b-check" id="b-check">
+          <p class="q" id="b-q-text"></p>
+          <div class="b-opts" id="b-opts"></div>
+          <p class="b-why" id="b-why" aria-live="polite"></p>
+        </div>
+        <div class="b-nav">
+          <button class="btn" type="button" id="b-prev">← 이전</button>
+          <button class="btn primary" type="button" id="b-next">다음 →</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="stack" id="lab" hidden>
   <div class="cols">
     <section class="panel" aria-label="실린더와 피스톤">
       <div class="stage-head">
@@ -285,7 +373,8 @@
     W: ["외부에서 일을 받는다", "일을 하지 않는다", "외부에 일을 한다"]
   };
 
-  var view = "lab";
+  /* 처음에는 기초 다지기부터. 주소 끝에 #lab 을 붙이면 탐구 화면으로 바로 연다. */
+  var view = location.hash === "#lab" ? "lab" : "basics";
   var start, cur, proc = "isoT", res, steps = [], segs = [], pred = {}, geo = null;
   var $ = function (id) { return document.getElementById(id); };
   var slider = $("ctrl");
@@ -364,6 +453,7 @@
   }
 
   function showView() {
+    $("basics").hidden = view !== "basics";
     $("lab").hidden = view !== "lab";
     $("summary").hidden = view !== "sum";
     window.scrollTo(0, 0);
@@ -450,6 +540,12 @@
 
   function renderProcs() {
     var box = $("procs"); box.textContent = "";
+    var bb = document.createElement("button");
+    bb.type = "button"; bb.id = "proc-basics"; bb.setAttribute("role", "tab");
+    bb.setAttribute("aria-selected", String(view === "basics"));
+    bb.textContent = "기초 다지기";
+    bb.addEventListener("click", function () { view = "basics"; showView(); renderProcs(); });
+    box.appendChild(bb);
     ORDER.forEach(function (id) {
       var b = document.createElement("button");
       b.type = "button"; b.id = "proc-" + id; b.setAttribute("role", "tab");
@@ -730,17 +826,204 @@
     c.fillStyle = col.accent; c.beginPath(); c.arc(X(res.V), Y(res.P), 7, 0, Math.PI * 2); c.fill();
   }
 
+  /* ---------- 기초 다지기 ---------- */
+  var bs = { T: 300, Tt: 300, V: 2.2, Vt: 2.2, q: 0, w: 0, until: 0, lock: false };
+  var bstep = 0, bdone = [], bparts = [];
+  for (var j = 0; j < 36; j++) bparts.push({ u: Math.random(), v: Math.random(), a: Math.random() * Math.PI * 2 });
+  function bSay(t) { $("b-out").textContent = t; }
+  function bShowArrows(q, w) { bs.q = q; bs.w = w; bs.until = performance.now() + 2400; }
+  /* 온도 목표값을 d 만큼 바꾼다. 더 바꿀 수 없으면 false */
+  function bHeat(d) {
+    var nt = Math.max(150, Math.min(600, bs.Tt + d));
+    if (nt === bs.Tt) return false;
+    bs.Tt = nt; return true;
+  }
+  /* 열 출입 없이 부피 목표값을 d 만큼 바꾼다 (온도는 단열 과정처럼 따라 변한다) */
+  function bPush(d) {
+    var nv = Math.max(1.2, Math.min(3.9, bs.Vt + d));
+    if (Math.abs(nv - bs.Vt) < 0.05) return false;
+    bs.Tt = Math.max(150, Math.min(650, bs.Tt * Math.pow(bs.Vt / nv, G - 1))); bs.Vt = nv; return true;
+  }
+
+  var BASICS = [
+    {
+      nm: "내부 에너지", mode: "scene", lock: false,
+      title: "기체 분자는 쉬지 않고 움직여요",
+      body: ["실린더 안의 기체는 눈에 보이지 않는 아주 작은 분자들로 이루어져 있어요.", "분자들은 가만히 있지 않고 이리저리 움직이며 벽에 부딪혀요. 분자가 빨리 움직일수록 기체의 온도가 높아요."],
+      key: "내부 에너지 U = 기체 분자들의 운동 에너지를 모두 더한 것. 온도가 높을수록 내부 에너지가 커요.",
+      hint: "아래 버튼으로 온도를 바꾸면서 분자의 빠르기와 보라색 막대를 살펴보세요.",
+      actions: [
+        { label: "온도 올리기", run: function () { bs.q = 0; bs.w = 0; bSay(bHeat(100) ? "온도가 올라갔어요. 분자가 더 빨리 움직이고, 내부 에너지가 커졌어요." : "여기서는 더 올릴 수 없어요. 이번에는 내려 보세요."); } },
+        { label: "온도 내리기", run: function () { bs.q = 0; bs.w = 0; bSay(bHeat(-100) ? "온도가 내려갔어요. 분자가 느려지고, 내부 에너지가 작아졌어요." : "여기서는 더 내릴 수 없어요. 이번에는 올려 보세요."); } }
+      ],
+      quiz: { q: "기체의 온도가 올라가면 내부 에너지는 어떻게 될까요?", opts: ["커진다", "작아진다"], ans: 0, ok: "맞아요! 온도가 올라가면 분자가 빨라져서 내부 에너지가 커져요.", no: "분자가 빨라지면 운동 에너지가 어떻게 되는지 보라색 막대를 다시 보세요." }
+    },
+    {
+      nm: "열", mode: "scene", lock: true,
+      title: "방법 ① 열을 주거나 빼앗기",
+      body: ["내부 에너지를 바꾸는 첫 번째 방법은 열이에요.", "기체를 가열하면 열이 기체로 들어가서 분자가 빨라져요. 반대로 식히면 열이 기체에서 빠져나가요.", "지금은 피스톤을 고정해 두어서 기체의 부피는 변하지 않아요."],
+      key: "열 Q — 기체가 열을 받으면 Q > 0, 열을 내보내면 Q < 0",
+      hint: "가열하거나 식히면서 빨간 화살표의 방향을 살펴보세요.",
+      actions: [
+        { label: "가열하기", run: function () { if (bHeat(120)) { bShowArrows(1, 0); bSay("열이 기체로 들어갔어요 (Q > 0). 분자가 빨라지고 내부 에너지가 커졌어요."); } else bSay("충분히 뜨거워요. 이번에는 식혀 보세요."); } },
+        { label: "식히기", run: function () { if (bHeat(-120)) { bShowArrows(-1, 0); bSay("열이 기체에서 빠져나갔어요 (Q < 0). 분자가 느려지고 내부 에너지가 작아졌어요."); } else bSay("충분히 차가워요. 이번에는 가열해 보세요."); } }
+      ],
+      quiz: { q: "기체가 열을 내보낼 때 Q 의 부호는?", opts: ["Q > 0", "Q < 0"], ans: 1, ok: "맞아요! 열을 받으면 +, 내보내면 − 예요.", no: "'식히기'를 눌렀을 때 아래 글에 나오는 부호를 확인해 보세요." }
+    },
+    {
+      nm: "일", mode: "scene", lock: false,
+      title: "방법 ② 일을 하거나 받기",
+      body: ["내부 에너지를 바꾸는 두 번째 방법은 일이에요. 이번에는 열이 드나들지 못하게 막아 두었어요.", "피스톤을 눌러 기체를 압축하면 기체가 일을 받아서 분자가 빨라져요. 자전거 펌프로 바람을 넣을 때 펌프가 뜨거워지는 것과 같아요.", "기체가 피스톤을 밀어내며 팽창하면 기체가 일을 한 거예요. 그만큼 에너지를 써서 분자가 느려져요."],
+      key: "일 W — '기체가 한 일'이에요. 팽창하면 W > 0, 압축되면 W < 0",
+      hint: "피스톤을 누르거나 밀어내면서 분자의 빠르기가 어떻게 변하는지 살펴보세요.",
+      actions: [
+        { label: "피스톤 누르기 (압축)", run: function () { if (bPush(-0.7)) { bShowArrows(0, -1); bSay("피스톤이 기체를 눌렀어요. 기체가 일을 받아서 (W < 0) 분자가 빨라졌어요."); } else bSay("더 누를 수 없어요. 이번에는 팽창시켜 보세요."); } },
+        { label: "기체가 밀어내기 (팽창)", run: function () { if (bPush(0.7)) { bShowArrows(0, 1); bSay("기체가 피스톤을 밀어냈어요. 기체가 일을 해서 (W > 0) 에너지를 썼고, 분자가 느려졌어요."); } else bSay("더 팽창할 수 없어요. 이번에는 눌러 보세요."); } }
+      ],
+      quiz: { q: "기체가 팽창하며 피스톤을 밀어냈어요. W 의 부호는?", opts: ["W > 0", "W < 0"], ans: 0, ok: "맞아요! 기체가 외부에 일을 했으니 W > 0 이에요.", no: "W 는 '기체가 한 일'이에요. 밀어낸 쪽이 누구인지 생각해 보세요." }
+    },
+    {
+      nm: "제1법칙", mode: "law",
+      title: "에너지는 사라지지 않아요",
+      body: ["용돈으로 생각해 봐요. 받은 용돈에서 쓴 돈을 빼면 저금통에 남는 돈이죠.", "기체도 같아요. 받은 열(Q) 중에서 일(W)로 쓰고 남은 만큼 내부 에너지가 변해요(ΔU).", "받은 용돈 = 저금이 늘어난 양 + 쓴 돈"],
+      key: "열역학 제1법칙  Q = ΔU + W  (받은 열 = 내부 에너지 변화 + 기체가 한 일)",
+      quiz: { q: "기체가 열 100 J 를 받고 외부에 일 40 J 를 했어요. 내부 에너지 변화 ΔU 는?", opts: ["+140 J", "+60 J"], ans: 1, ok: "맞아요! 100 J 를 받아 40 J 를 썼으니 60 J 가 남아요.", no: "왼쪽 슬라이더를 Q = +100, W = +40 으로 맞춰 보세요." }
+    },
+    {
+      nm: "탐구 방법", mode: "guide",
+      title: "이제 직접 탐구해 봐요",
+      list: ["맨 위에서 과정을 하나 골라요.", "슬라이더를 움직이거나 그림 속 피스톤을 끌어요.", "그림에서 분자의 빠르기와 화살표(빨강 = 열, 초록 = 일)를 봐요.", "그래프에서 초록색으로 칠해진 넓이를 봐요. 이것이 기체가 한 일이에요.", "아래 카드에서 Q, ΔU, W 의 값과 부호를 읽어요."],
+      key: "막히면 언제든 맨 위의 '기초 다지기'로 돌아올 수 있어요.",
+      hint: "네 가지 과정은 '무엇을 그대로 두는가'가 달라요. 하나를 골라 시작해 보세요."
+    }
+  ];
+  var BGUIDE = { isoT: "온도를 그대로 둔 채 부피를 바꿔요.", adia: "열이 드나들지 못하게 막고 부피를 바꿔요.", isoP: "압력을 그대로 둔 채 가열하거나 식혀요.", isoV: "부피를 그대로 둔 채(피스톤 고정) 가열하거나 식혀요." };
+
+  function bLaw() {
+    var Q = parseFloat($("b-q").value), W = parseFloat($("b-w").value), U = Q - W;
+    $("b-q-val").textContent = sg(Q) + " J"; $("b-w-val").textContent = sg(W) + " J";
+    $("b-val-q").textContent = sg(Q) + " J"; $("b-val-u").textContent = sg(U) + " J"; $("b-val-w").textContent = sg(W) + " J";
+    setBar("b-bar-q", Q, 400); setBar("b-bar-u", U, 400); setBar("b-bar-w", W, 400);
+    var a = Q > 0 ? "열 " + Q + " J 를 받고" : Q < 0 ? "열 " + (-Q) + " J 를 내보내고" : "열이 드나들지 않고";
+    var b = W > 0 ? "외부에 일 " + W + " J 를 하면" : W < 0 ? "외부에서 일 " + (-W) + " J 를 받으면" : "일을 하지 않으면";
+    var r = U > 0 ? "내부 에너지가 " + U + " J 늘어나요. → 온도가 올라가요." : U < 0 ? "내부 에너지가 " + (-U) + " J 줄어들어요. → 온도가 내려가요." : "내부 에너지는 그대로예요. → 온도가 변하지 않아요.";
+    bSay(a + ", " + b + " " + r);
+  }
+
+  function bSteps() {
+    var box = $("b-steps"); box.textContent = "";
+    BASICS.forEach(function (s, i) {
+      var b = document.createElement("button"), n = document.createElement("span"), nm = document.createElement("span");
+      b.type = "button"; b.id = "b-step-" + i; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(i === bstep));
+      if (bdone[i]) b.className = "done";
+      n.className = "n"; n.textContent = bdone[i] ? "✓" : String(i + 1); nm.className = "nm"; nm.textContent = s.nm;
+      b.appendChild(n); b.appendChild(nm);
+      b.addEventListener("click", function () { bShow(i); });
+      box.appendChild(b);
+    });
+  }
+  function bQuiz() {
+    var s = BASICS[bstep], q = s.quiz, box = $("b-opts");
+    $("b-check").hidden = !q; if (!q) return;
+    $("b-q-text").textContent = "확인! " + q.q; box.textContent = ""; $("b-why").textContent = bdone[bstep] ? q.ok : "";
+    q.opts.forEach(function (o, i) {
+      var b = document.createElement("button"); b.type = "button"; b.id = "b-opt-" + bstep + "-" + i; b.textContent = o;
+      if (bdone[bstep] && i === q.ans) b.className = "right";
+      b.addEventListener("click", function () {
+        if (i === q.ans) { bdone[bstep] = true; bSteps(); bQuiz(); }
+        else { b.className = "wrong"; $("b-why").textContent = "다시 한번 생각해 봐요. " + q.no; }
+      });
+      box.appendChild(b);
+    });
+  }
+  function bShow(i) {
+    bstep = i; var s = BASICS[i];
+    bs.T = bs.Tt = 300; bs.V = bs.Vt = 2.2; bs.q = 0; bs.w = 0; bs.until = 0; bs.lock = !!s.lock;
+    $("b-scene-wrap").hidden = s.mode !== "scene"; $("b-law").hidden = s.mode !== "law"; $("b-guide").hidden = s.mode !== "guide";
+    $("b-count").textContent = "기초 다지기 " + (i + 1) + " / " + BASICS.length;
+    $("b-title").textContent = s.title; $("b-key").textContent = s.key;
+    var body = $("b-body"); body.textContent = "";
+    (s.body || []).forEach(function (t) { var p = document.createElement("p"); p.textContent = t; body.appendChild(p); });
+    if (s.list) { var ol = document.createElement("ol"); s.list.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; ol.appendChild(li); }); body.appendChild(ol); }
+    var acts = $("b-actions"); acts.textContent = "";
+    (s.actions || []).forEach(function (a, k) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.id = "b-act-" + i + "-" + k; b.textContent = a.label;
+      b.addEventListener("click", a.run); acts.appendChild(b);
+    });
+    if (s.mode === "guide") {
+      var g = $("b-guide"); g.textContent = "";
+      ORDER.forEach(function (id) {
+        var b = document.createElement("button"), nm = document.createElement("b"), d = document.createElement("span");
+        b.type = "button"; b.id = "b-go-" + id; nm.textContent = PROCS[id].name + " 과정"; d.textContent = BGUIDE[id];
+        b.appendChild(nm); b.appendChild(d); b.addEventListener("click", function () { go(id); }); g.appendChild(b);
+      });
+    }
+    if (s.mode === "law") bLaw(); else bSay(s.hint);
+    $("b-prev").disabled = i === 0;
+    $("b-next").textContent = i === BASICS.length - 1 ? "등온 과정부터 탐구 시작 →" : "다음 →";
+    bSteps(); bQuiz();
+  }
+  $("b-q").addEventListener("input", bLaw); $("b-w").addEventListener("input", bLaw);
+  $("b-prev").addEventListener("click", function () { if (bstep > 0) { bShow(bstep - 1); window.scrollTo(0, 0); } });
+  $("b-next").addEventListener("click", function () {
+    if (bstep === BASICS.length - 1) { go("isoT"); return; }
+    bShow(bstep + 1); window.scrollTo(0, 0);
+  });
+
+  function drawBasic(col, dt) {
+    var f = fit($("b-scene")), c = f.c, w = f.w, h = f.h, k = still ? 1 : Math.min(1, dt * 3.5);
+    bs.T += (bs.Tt - bs.T) * k; bs.V += (bs.Vt - bs.V) * k;
+    var L = 20, R = w - 12, top = h * 0.2, bot = h * 0.7, mid = (top + bot) / 2, inner = R - L - 30;
+    var gw = bs.V / VAX * inner, px = L + gw, on = performance.now() < bs.until;
+    c.fillStyle = tempColor(bs.T, 0.18); c.fillRect(L, top, gw, bot - top);
+    var sp = 100 * Math.sqrt(bs.T / 300);
+    c.fillStyle = tempColor(bs.T, 1);
+    bparts.forEach(function (p) {
+      if (!still) {
+        p.u += Math.cos(p.a) * sp * dt / gw; p.v += Math.sin(p.a) * sp * dt / (bot - top);
+        if (p.u < 0) { p.u = -p.u; p.a = Math.PI - p.a; } if (p.u > 1) { p.u = 2 - p.u; p.a = Math.PI - p.a; }
+        if (p.v < 0) { p.v = -p.v; p.a = -p.a; } if (p.v > 1) { p.v = 2 - p.v; p.a = -p.a; }
+        p.u = Math.max(0, Math.min(1, p.u)); p.v = Math.max(0, Math.min(1, p.v));
+      }
+      c.beginPath(); c.arc(L + 6 + p.u * Math.max(1, gw - 12), top + 6 + p.v * (bot - top - 12), 4, 0, Math.PI * 2); c.fill();
+    });
+    c.strokeStyle = col.ink; c.lineWidth = 3; c.lineJoin = "round"; c.lineCap = "butt";
+    c.beginPath(); c.moveTo(R, top); c.lineTo(L, top); c.lineTo(L, bot); c.lineTo(R, bot); c.stroke();
+    c.fillStyle = col.muted; c.fillRect(px + 16, mid - 5, Math.max(0, R - px - 10), 10);
+    c.fillStyle = col.ink; c.fillRect(px, top + 2, 16, bot - top - 4);
+    c.font = "600 14px " + FONT; c.textBaseline = "middle"; c.textAlign = "center";
+    if (bs.lock) {
+      c.fillRect(px + 16, top + 2, 10, 10); c.fillRect(px + 16, bot - 12, 10, 10);
+      c.fillStyle = col.muted; c.fillText("피스톤 고정", clampX(px + 8, 50, w), top / 2);
+    }
+    if (on && bs.w) {
+      if (bs.w > 0) arrow(c, px + 26, mid - 26, px + 72, mid - 26, col.work); else arrow(c, px + 72, mid - 26, px + 26, mid - 26, col.work);
+      c.fillStyle = col.work; c.fillText(bs.w > 0 ? "기체가 일을 함" : "기체가 일을 받음", clampX(px + 8, 70, w), top / 2);
+    }
+    if (on && bs.q) {
+      var cx = L + gw / 2, y1 = bot + 12, y2 = Math.min(bot + 38, h - 26);
+      [-1, 0, 1].forEach(function (m) {
+        var x = cx + m * Math.min(40, gw / 4);
+        if (bs.q > 0) arrow(c, x, y2, x, y1, col.heat); else arrow(c, x, y1, x, y2, col.heat);
+      });
+      c.fillStyle = col.heat; c.fillText(bs.q > 0 ? "열이 들어감" : "열이 빠져나감", clampX(cx, 50, w), Math.min(h - 10, y2 + 14));
+    }
+    $("b-meter").style.width = Math.max(4, Math.min(100, (bs.T - 100) / 550 * 100)) + "%";
+  }
+
   var last = 0;
   function frame(ms) {
     var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms;
     var cs = getComputedStyle(document.documentElement), col = {};
     ["ink", "muted", "line", "accent", "surface", "heat", "work", "inner"].forEach(function (n) { col[n] = cs.getPropertyValue("--" + n).trim(); });
-    drawCyl(col, dt); drawPV(col);
+    if (view === "lab") { drawCyl(col, dt); drawPV(col); }
+    else if (view === "basics" && BASICS[bstep].mode === "scene") drawBasic(col, dt);
     requestAnimationFrame(frame);
   }
 
   start = { P: INIT.P, V: INIT.V, T: INIT.T };
   setupSlider(); renderProcs(); renderPredict(); renderLog(); renderSummary(); update();
+  bShow(0); showView();
   requestAnimationFrame(frame);
 })();
 </script>
