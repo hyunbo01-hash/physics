@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="열역학 제1법칙을 배우기 전에 알아야 할 여덟 가지 개념을 직접 조작하며 확인하는 준비 학습">
 <title>열역학 제1법칙 준비 학습</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="../assets/sim.css?v=2">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/sim.css?v=3">
 <style>
 /* 개념 고르기 */
 .steps button { display: flex; justify-content: center; align-items: baseline; gap: 0.375rem; }
@@ -19,7 +19,7 @@
 .hero-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; }
 .hero-count { font-family: var(--font-code); font-size: 0.875rem; color: var(--muted); }
 .hero-title { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.25rem, 3vw, 1.625rem); }
-.hero-law { margin: 0.25rem 0 0; font-family: var(--font-code); font-weight: 500; font-size: clamp(1.875rem, 5.5vw, 3rem); line-height: 1.15; color: var(--accent); text-wrap: balance; overflow-wrap: anywhere; }
+.hero-law { margin: 0.25rem 0 0; font-family: var(--font-code); font-weight: 700; letter-spacing: -0.01em; font-size: clamp(1.875rem, 5.5vw, 3rem); line-height: 1.15; color: var(--accent); text-wrap: balance; overflow-wrap: anywhere; }
 .hero-core { margin: 0; font-size: clamp(1.0625rem, 2.2vw, 1.25rem); font-weight: 600; text-wrap: balance; }
 
 /* 그림 */
@@ -32,10 +32,10 @@
 .rop { align-self: center; font-family: var(--font-code); font-size: 1.5rem; color: var(--muted); }
 .rt { flex: 1 1 6.5rem; min-width: 0; display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: 10px; }
 .rt .nm { font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
-.rt .v { font-family: var(--font-code); font-size: clamp(1.0625rem, 2.4vw, 1.375rem); font-variant-numeric: tabular-nums; line-height: 1.25; overflow-wrap: anywhere; }
+.rt .v { font-weight: 600; font-family: var(--font-code); font-size: clamp(1.0625rem, 2.4vw, 1.375rem); font-variant-numeric: tabular-nums; line-height: 1.25; overflow-wrap: anywhere; }
 .rt.key { flex: 1.6 1 9rem; border: 2px solid var(--c); background: var(--bg); }
 .rt.key .nm { color: var(--c); }
-.rt.key .v { white-space: nowrap; font-size: clamp(1.375rem, 3.2vw, 1.875rem); color: var(--c); font-weight: 500; }
+.rt.key .v { white-space: nowrap; font-size: clamp(1.375rem, 3.2vw, 1.875rem); color: var(--c); font-weight: 700; }
 .rbar { height: 0.5rem; background: var(--line); border-radius: 999px; overflow: hidden; margin-top: 0.25rem; }
 .rbar div { height: 100%; background: var(--c); border-radius: 999px; transition: width 0.12s; }
 @media (prefers-reduced-motion: reduce) { .rbar div { transition: none; } }

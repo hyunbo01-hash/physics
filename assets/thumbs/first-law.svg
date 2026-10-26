@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="피스톤이 달린 실린더 속 기체와 압력-부피 그래프">
   <rect width="320" height="180" fill="#eef1fb"/>
-  <text x="160" y="30" text-anchor="middle" font-family="'IBM Plex Mono', Consolas, monospace" font-size="17" font-weight="600" fill="#1b1f27"><tspan fill="#dc3f45">Q</tspan> = <tspan fill="#7a55d6">ΔU</tspan> + <tspan fill="#12925f">W</tspan></text>
+  <text x="160" y="30" text-anchor="middle" font-family="'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif" font-size="17" font-weight="600" fill="#1b1f27"><tspan fill="#dc3f45">Q</tspan> = <tspan fill="#7a55d6">ΔU</tspan> + <tspan fill="#12925f">W</tspan></text>
 
   <!-- 실린더와 기체 -->
   <rect x="24" y="58" width="88" height="60" fill="#f6c9cb"/>
@@ -33,7 +33,7 @@
   <path d="M230 93.5Q240 108 266 116" fill="none" stroke="#3453d1" stroke-width="4" stroke-linecap="round"/>
   <circle cx="230" cy="93.5" r="5" fill="#eef1fb" stroke="#3453d1" stroke-width="2.5"/>
   <circle cx="266" cy="116" r="5.5" fill="#3453d1"/>
-  <g font-family="'IBM Plex Sans KR', 'Malgun Gothic', sans-serif" font-size="12" fill="#626a77">
+  <g font-family="'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif" font-size="12" fill="#626a77">
     <text x="194" y="56" text-anchor="end">P</text>
     <text x="300" y="158" text-anchor="end">V</text>
   </g>

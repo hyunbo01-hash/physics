@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="피스톤 속 기체의 등온·단열·등압·등적 과정에서 Q = ΔU + W 를 확인하는 탐구 시뮬레이션">
 <title>열역학 제1법칙 탐구</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="../assets/sim.css?v=2">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/sim.css?v=3">
 <style>
 .cond { margin: 0; color: var(--muted); font-size: 0.9375rem; }
 
@@ -30,7 +30,7 @@
 .tile { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0.875rem; border-radius: 10px; border: 1px solid var(--line); border-top: 4px solid var(--c); min-width: 0; }
 .tile.q { --c: var(--heat); } .tile.u { --c: var(--inner); } .tile.w { --c: var(--work); }
 .tile .name { font-size: 0.875rem; font-weight: 600; color: var(--c); }
-.tile .val { font-family: var(--font-code); font-size: clamp(1.375rem, 3.2vw, 1.875rem); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tile .val { font-weight: 700; font-family: var(--font-code); font-size: clamp(1.375rem, 3.2vw, 1.875rem); font-variant-numeric: tabular-nums; line-height: 1.2; }
 .tile .mean { font-size: 0.875rem; color: var(--muted); }
 .track { position: relative; height: 0.625rem; background: var(--bg); border-radius: 999px; margin-block: 0.125rem; }
 .track::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: var(--muted); }
@@ -60,7 +60,7 @@
 @media (prefers-reduced-motion: reduce) { .sum-top [data-id] { transition: none; } }
 .sum-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
 .sum-card .keep { font-size: 0.875rem; color: var(--muted); }
-.sum-card .biglaw { font-family: var(--font-code); font-size: 1.5rem; line-height: 1.2; }
+.sum-card .biglaw { font-weight: 700; font-family: var(--font-code); font-size: 1.5rem; line-height: 1.2; }
 .sum-card p { margin: 0; }
 .sum-card ul { margin: 0; padding-left: 1.125rem; font-size: 0.9375rem; color: var(--muted); display: flex; flex-direction: column; gap: 0.25rem; }
 .sum-card .btn { align-self: flex-start; margin-top: auto; }
@@ -695,7 +695,7 @@
   ["pointerup", "pointercancel"].forEach(function (n) { cyl.addEventListener(n, function () { dragging = false; }); });
 
   /* ---------- 그림 ---------- */
-  var FONT = "'IBM Plex Sans KR', 'Malgun Gothic', sans-serif";
+  var FONT = "'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif";
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var parts = [];
   for (var i = 0; i < 40; i++) parts.push({ u: Math.random(), v: Math.random(), a: Math.random() * Math.PI * 2 });

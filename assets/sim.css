@@ -13,9 +13,9 @@
   --inner: #7a55d6;
   --work: #12925f;
 
-  --font-display: "Gothic A1", "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-  --font-body: "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-  --font-code: "IBM Plex Mono", Consolas, "Courier New", monospace;
+  --font-display: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-code: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; /* 수식·숫자도 같은 글꼴, 자릿수는 tabular-nums 로 맞춘다 */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
