@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="열역학 제1법칙을 배우기 전에 알아야 할 여덟 가지 개념을 직접 조작하며 확인하는 준비 학습">
+<meta name="description" content="열역학 제1법칙을 배우기 전에 알아야 할 아홉 가지 개념을 직접 조작하며 확인하는 준비 학습">
 <title>열역학 제1법칙 준비 학습</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="../assets/sim.css?v=3">
@@ -192,11 +192,12 @@
         return { c: c, w: w, h: h };
       },
       /* (x, y) 에서 폭 bw, 높이 bh 인 기체 영역에 분자를 그린다 */
-      gas: function (c, x, y, bw, bh, T, dt) {
+      gas: function (c, x, y, bw, bh, T, dt, n) {
         var t = (T - 100) / 500, sp = 110 * Math.sqrt(T / 300);
         c.fillStyle = tcol(t, 0.16); c.fillRect(x, y, bw, bh);
         c.fillStyle = tcol(t, 1);
-        parts.forEach(function (p) {
+        parts.forEach(function (p, i) {
+          if (n !== undefined && i >= n) return;
           if (!still) {
             p.u += Math.cos(p.a) * sp * dt / Math.max(20, bw); p.v += Math.sin(p.a) * sp * dt / Math.max(20, bh);
             if (p.u < 0) { p.u = -p.u; p.a = Math.PI - p.a; } if (p.u > 1) { p.u = 2 - p.u; p.a = Math.PI - p.a; }
@@ -215,19 +216,44 @@
       law: "Eₖ ∝ T",
       core: "절대 온도는 기체 분자의 평균 운동 에너지에 비례한다.",
       pts: ["기체 분자는 끊임없이 무작위로 움직이며 벽과 충돌한다. 이 운동을 열운동이라고 한다.", "온도가 높을수록 분자가 평균적으로 더 빠르게 움직인다.", "절대 온도(K) = 섭씨온도(°C) + 273"],
-      link: "제1법칙에서: 기체의 온도가 올라갔다면 내부 에너지가 증가한 것이다.",
+      link: "다음 개념에서: 기체 분자들의 운동 에너지를 모두 더하면 내부 에너지가 된다.",
       quiz: { q: "절대 온도가 300 K에서 600 K가 되면 기체 분자의 평균 운동 에너지는?", opts: ["2배가 된다", "4배가 된다", "변하지 않는다"], ans: 0, why: "평균 운동 에너지는 절대 온도에 비례하므로 온도가 2배이면 2배가 된다." },
       init: function (fig, ctl, out) {
         var s = { T: 300 }, g = gasCanvas(fig, "상자 속에서 움직이는 기체 분자");
         slider(ctl, "절대 온도", 100, 600, 10, 300, function (v) { return v + " K"; }, function (v) {
           s.T = v;
-          tiles(out, [{ n: "절대 온도 T", v: v + " K" }, "→", { n: "분자의 평균 운동 에너지", v: (v / 300).toFixed(1) + "배", key: true, c: "inner", bar: v / 600 }],
+          tiles(out, [{ n: "절대 온도 T", v: v + " K" }, "→", { n: "분자의 평균 운동 에너지", v: (v / 300).toFixed(1) + "배", key: true, bar: v / 600 }],
             "300 K 일 때를 1배로 놓고 비교한 값");
         });
         return function (dt) {
           var f = g.begin(), c = f.c;
           g.gas(c, 4, 4, f.w - 8, f.h - 8, s.T, dt);
           c.strokeStyle = cssVar("ink"); c.lineWidth = 3; c.strokeRect(4, 4, f.w - 8, f.h - 8);
+        };
+      }
+    },
+    {
+      nm: "내부 에너지", t: "내부 에너지",
+      law: "U = 분자 운동 에너지의 총합",
+      core: "이상 기체의 내부 에너지는 온도만으로 정해진다. 온도가 오르면 U 가 커지고, 온도가 그대로면 U 도 그대로이다.",
+      pts: ["기체 분자의 무작위 운동(열운동)에 의한 운동 에너지를 모두 더한 것을 내부 에너지 U 라고 한다.", "같은 기체라면 분자 수가 많을수록, 온도가 높을수록 내부 에너지가 크다.", "이상 기체는 분자 사이의 힘을 무시하므로, 양이 정해진 기체의 내부 에너지는 온도에만 관계한다. 부피만 바뀌고 온도가 같으면 U 도 같다.", "기체를 가열하거나 기체에 일을 해 주면 내부 에너지가 증가한다."],
+      link: "제1법칙에서: ΔU > 0 이면 온도가 올라간 것이고, 등온 과정처럼 온도가 그대로이면 ΔU = 0 이다.",
+      quiz: { q: "같은 양의 이상 기체가 온도는 그대로이고 부피만 2배가 되었다. 내부 에너지는?", opts: ["변하지 않는다", "2배가 된다", "절반이 된다"], ans: 0, why: "이상 기체의 내부 에너지는 온도에만 관계하므로, 온도가 같으면 부피가 변해도 내부 에너지는 같다." },
+      init: function (fig, ctl, out) {
+        var s = { T: 300, N: 20, V: 1 }, g = gasCanvas(fig, "상자 속에서 움직이는 기체 분자들");
+        function upd() {
+          var U = s.N / 20 * s.T / 300;
+          tiles(out, [{ n: "분자 수 N", v: s.N + "개" }, "×", { n: "분자 1개의 평균 운동 에너지", v: (s.T / 300).toFixed(1) + "배" }, "=",
+            { n: "내부 에너지 U", v: U.toFixed(1) + "배", key: true, c: "inner", bar: U / 4 }],
+            "분자 20개, 300 K 일 때를 1배로 놓은 값. 상자의 부피를 바꿔도 내부 에너지는 변하지 않는다.");
+        }
+        slider(ctl, "절대 온도", 150, 600, 10, 300, function (v) { return v + " K"; }, function (v) { s.T = v; upd(); });
+        slider(ctl, "분자 수", 10, 40, 2, 20, function (v) { return v + "개"; }, function (v) { s.N = v; upd(); });
+        slider(ctl, "상자의 부피", 50, 100, 5, 100, function (v) { return v + " %"; }, function (v) { s.V = v / 100; upd(); });
+        return function (dt) {
+          var f = g.begin(), c = f.c, bw = (f.w - 8) * s.V;
+          g.gas(c, 4, 4, bw, f.h - 8, s.T, dt, s.N);
+          c.strokeStyle = cssVar("ink"); c.lineWidth = 3; c.strokeRect(4, 4, bw, f.h - 8);
         };
       }
     },

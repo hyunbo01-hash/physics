@@ -37,7 +37,7 @@ window.SITE = {
   items: [
     { title: "열역학 제1법칙 준비 학습", type: "learn", subject: "mechanics", lesson: "II-1-03",
       href: "sims/first-law-prep.html", thumb: "assets/thumbs/first-law-prep.svg",
-      desc: "온도·열·압력·기체 법칙·일·기체가 한 일·부호·그래프, 미리 알아야 할 개념 8가지", added: "2026-10-12" },
+      desc: "온도·내부 에너지·열·압력·기체 법칙·일·기체가 한 일·부호·그래프, 미리 알아야 할 개념 9가지", added: "2026-10-12" },
     { title: "열역학 제1법칙 탐구", type: "sim", subject: "mechanics", lesson: "II-1-03",
       href: "sims/first-law.html", thumb: "assets/thumbs/first-law.svg",
       desc: "기초 다지기부터 등온·단열·등압·등적 탐구, 한눈에 정리까지", added: "2026-10-12" }
