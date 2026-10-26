@@ -23,8 +23,8 @@
 .hero-core { margin: 0; font-size: clamp(1.0625rem, 2.2vw, 1.25rem); font-weight: 600; text-wrap: balance; }
 
 /* 그림 */
-.fig svg { display: block; width: 100%; height: auto; }
-.fig canvas { aspect-ratio: 9 / 5; }
+.fig svg { display: block; width: 100%; height: min(13.5rem, 56vw); }
+.fig canvas { height: min(13.5rem, 56vw); }
 
 /* 결과 칸 */
 .rtiles { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0.5rem; }
@@ -33,9 +33,9 @@
 .rt { flex: 1 1 6.5rem; min-width: 0; display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: 10px; }
 .rt .nm { font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
 .rt .v { font-family: var(--font-code); font-size: clamp(1.0625rem, 2.4vw, 1.375rem); font-variant-numeric: tabular-nums; line-height: 1.25; overflow-wrap: anywhere; }
-.rt.key { flex-grow: 1.6; border: 2px solid var(--c); background: var(--bg); }
+.rt.key { flex: 1.6 1 9rem; border: 2px solid var(--c); background: var(--bg); }
 .rt.key .nm { color: var(--c); }
-.rt.key .v { font-size: clamp(1.375rem, 3.2vw, 1.875rem); color: var(--c); font-weight: 500; }
+.rt.key .v { white-space: nowrap; font-size: clamp(1.375rem, 3.2vw, 1.875rem); color: var(--c); font-weight: 500; }
 .rbar { height: 0.5rem; background: var(--line); border-radius: 999px; overflow: hidden; margin-top: 0.25rem; }
 .rbar div { height: 100%; background: var(--c); border-radius: 999px; transition: width 0.12s; }
 @media (prefers-reduced-motion: reduce) { .rbar div { transition: none; } }
