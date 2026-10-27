@@ -113,7 +113,7 @@
     <button class="btn primary" type="button" id="btn-next">다음 개념 →</button>
   </div>
 
-  <footer>기체는 이상 기체로 다룹니다. 기체 법칙과 그래프의 기준 상태: 2.0×10⁵ Pa, 2.0×10⁻³ m³, 300 K. 기체가 한 일에서 피스톤 넓이는 100 cm²(0.01 m²)로 고정합니다.</footer>
+  <footer>기체는 이상 기체로 다룹니다. 기체 법칙과 그래프의 기준 상태: 2.0×10⁵ Pa, 2.0×10⁻³ m³, 300 K. 기체가 한 일은 계산이 쉽도록 자연수 값만 씁니다.</footer>
 </div>
 
 <script>
@@ -375,36 +375,40 @@
         ["A × ΔL 은 늘어난 부피 ΔV 이므로", "W = PΔV"]
       ],
       link: "제1법칙에서: 기체가 팽창하면 ΔV > 0 이므로 W > 0, 압축되면 ΔV < 0 이므로 W < 0 이다. 압력–부피 그래프 아래의 넓이가 이 일이다.",
-      quiz: { q: "압력이 2×10⁵ Pa 로 일정한 기체의 부피가 1×10⁻³ m³ 늘었다. 기체가 한 일은?", opts: ["200 J", "2 J", "2×10⁸ J"], ans: 0, why: "W = PΔV = 2×10⁵ Pa × 1×10⁻³ m³ = 200 J 이다." },
+      quiz: { q: "압력이 200 Pa 로 일정한 기체의 부피가 3 m³ 늘었다. 기체가 한 일은?", opts: ["600 J", "203 J", "67 J"], ans: 0, why: "W = PΔV = 200 Pa × 3 m³ = 600 J 이다." },
       init: function (fig, ctl, out) {
-        var s = { P: 2, L: 0.1 };
+        /* 계산이 쉽도록 모두 자연수: 압력 100~500 Pa, 넓이 1~4 m², 거리 0~5 m */
+        var s = { P: 200, A: 2, L: 3 };
         function draw() {
-          var A = 0.01, F = s.P * 1e5 * A, W = F * s.L, dV = A * s.L, px = 110 + s.L * 400;
-          var b = '<rect x="20" y="58" width="' + (px - 20) + '" height="80" fill="var(--accent-soft)"/>' +
-            '<rect x="110" y="58" width="' + (px - 110) + '" height="80" fill="var(--work)" fill-opacity="0.3"/>' +
-            '<path d="M235 56H20V140H235" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>' +
-            '<rect x="98" y="60" width="12" height="76" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/>' +
-            '<rect x="' + px + '" y="60" width="12" height="76" fill="var(--ink)"/>' +
+          var F = s.P * s.A, W = F * s.L, dV = s.A * s.L, px = 110 + s.L * 16;
+          var h = 30 + s.A * 14, top = 98 - h / 2, bot = 98 + h / 2;
+          var b = '<rect x="20" y="' + top + '" width="' + (px - 20) + '" height="' + h + '" fill="var(--accent-soft)"/>' +
+            '<rect x="110" y="' + top + '" width="' + (px - 110) + '" height="' + h + '" fill="var(--work)" fill-opacity="0.3"/>' +
+            '<path d="M235 ' + (top - 2) + 'H20V' + (bot + 2) + 'H235" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>' +
+            '<rect x="98" y="' + (top + 2) + '" width="12" height="' + (h - 4) + '" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/>' +
+            '<rect x="' + px + '" y="' + (top + 2) + '" width="12" height="' + (h - 4) + '" fill="var(--ink)"/>' +
             '<rect x="' + (px + 12) + '" y="93" width="' + Math.max(0, 238 - px - 12) + '" height="10" fill="var(--muted)"/>' +
-            arr(px + 2, 40, px + 46, 40, "var(--heat)", 4) + txt(px + 50, 45, "F = PA", "var(--heat)", "start", true) +
+            arr(px + 2, top - 16, px + 46, top - 16, "var(--heat)", 4) + txt(px + 50, top - 11, "F = PA", "var(--heat)", "start", true) +
             txt(60, 103, "기체", "var(--ink)", "middle", true);
-          if (s.L >= 0.05) b += txt((110 + px) / 2, 103, "ΔV", "var(--work)", "middle", true) +
-            '<path d="M110 152V160M' + px + ' 152V160M110 156H' + px + '" stroke="var(--work)" stroke-width="2"/>' + txt((110 + px) / 2, 178, "ΔL", "var(--work)", "middle", true);
+          if (s.L >= 1) b += txt((110 + px) / 2, 103, "ΔV", "var(--work)", "middle", true) +
+            '<path d="M110 ' + (bot + 10) + 'V' + (bot + 18) + 'M' + px + ' ' + (bot + 10) + 'V' + (bot + 18) + 'M110 ' + (bot + 14) + 'H' + px + '" stroke="var(--work)" stroke-width="2"/>' +
+            txt((110 + px) / 2, bot + 34, "ΔL", "var(--work)", "middle", true);
           /* 오른쪽: 압력–부피 그래프 */
-          var gx = 262, gy = 170, py = gy - s.P / 3 * 100, vx = 280 + dV * 1000 * 30;
+          var gx = 262, gy = 170, py = gy - s.P / 500 * 100, vx = 280 + dV * 3;
           b += '<rect x="280" y="' + py + '" width="' + (vx - 280) + '" height="' + (gy - py) + '" fill="var(--work)" fill-opacity="0.3"/>' +
             '<path d="M' + gx + ' 52V' + gy + 'H352" fill="none" stroke="var(--ink)" stroke-width="2"/>' +
             '<path d="M280 ' + py + 'H' + Math.max(281, vx) + '" stroke="var(--accent)" stroke-width="3.5"/>' +
             txt(gx - 4, 48, "P", "var(--muted)", "start") + txt(352, 190, "V", "var(--muted)", "end");
           fig.innerHTML = svg("기체가 피스톤을 밀어 부피가 늘어나는 그림과 압력-부피 그래프", b);
-          tiles(out, [{ n: "힘 F = PA", v: F.toFixed(0) + " N" }, "×", { n: "이동 거리 ΔL", v: s.L.toFixed(2) + " m" }, "=",
-            { n: "W = F × ΔL", v: W.toFixed(0) + " J", key: true, c: "work", bar: W / 600 }, "br",
-            { n: "압력 P", v: s.P.toFixed(1) + "×10⁵ Pa" }, "×", { n: "부피 변화 ΔV", v: (dV * 1000).toFixed(1) + "×10⁻³ m³" }, "=",
-            { n: "W = PΔV", v: (s.P * 1e5 * dV).toFixed(0) + " J", key: true, c: "work", bar: W / 600 }],
+          tiles(out, [{ n: "힘 F = P × A", v: F + " N" }, "×", { n: "이동 거리 ΔL", v: s.L + " m" }, "=",
+            { n: "W = F × ΔL", v: W + " J", key: true, c: "work", bar: W / 10000 }, "br",
+            { n: "압력 P", v: s.P + " Pa" }, "×", { n: "부피 변화 ΔV = A × ΔL", v: dV + " m³" }, "=",
+            { n: "W = PΔV", v: s.P * dV + " J", key: true, c: "work", bar: W / 10000 }],
             "두 방법으로 구한 일이 언제나 같다. 오른쪽 그래프의 색칠한 넓이도 이 일이다.");
         }
-        slider(ctl, "기체의 압력 P", 1, 3, 0.5, 2, function (v) { return v.toFixed(1) + " ×10⁵ Pa"; }, function (v) { s.P = v; draw(); });
-        slider(ctl, "피스톤이 밀려난 거리 ΔL", 0, 0.2, 0.02, 0.1, function (v) { return v.toFixed(2) + " m"; }, function (v) { s.L = v; draw(); });
+        slider(ctl, "기체의 압력 P", 100, 500, 100, 200, function (v) { return v + " Pa"; }, function (v) { s.P = v; draw(); });
+        slider(ctl, "피스톤 넓이 A", 1, 4, 1, 2, function (v) { return v + " m²"; }, function (v) { s.A = v; draw(); });
+        slider(ctl, "피스톤이 밀려난 거리 ΔL", 0, 5, 1, 3, function (v) { return v + " m"; }, function (v) { s.L = v; draw(); });
       }
     },
     {
