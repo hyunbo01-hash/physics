@@ -1,5 +1,6 @@
-/* 물리 수업 자료실 — 시뮬레이션·활동 페이지 공통 스타일 (색·글꼴은 index.html 과 같은 값) */
+/* 물리 수업 자료실 — 시뮬레이션·활동 페이지 공통 스타일 (항상 밝은 톤) */
 :root {
+  color-scheme: light; /* 컴퓨터가 어두운 모드여도 항상 밝게 */
   --bg: #f5f6f8;
   --surface: #ffffff;
   --ink: #1b1f27;
@@ -16,20 +17,6 @@
   --font-display: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --font-body: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --font-code: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; /* 수식·숫자도 같은 글꼴, 자릿수는 tabular-nums 로 맞춘다 */
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #14161b; --surface: #1d2027; --ink: #eceef2; --muted: #9aa2ae;
-    --line: #30343e; --accent: #8098ff; --accent-soft: #252c47; --mark: #f0b45c;
-    --heat: #ff7377; --inner: #b79cff; --work: #40d490;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #14161b; --surface: #1d2027; --ink: #eceef2; --muted: #9aa2ae;
-  --line: #30343e; --accent: #8098ff; --accent-soft: #252c47; --mark: #f0b45c;
-  --heat: #ff7377; --inner: #b79cff; --work: #40d490;
-  color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
