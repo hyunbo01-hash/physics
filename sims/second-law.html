@@ -144,7 +144,7 @@
     <div class="sum-cards" id="sum-cards"></div>
   </div>
 
-  <footer>잉크: 입자끼리 부딪히지 않고 벽에서만 튕기는 단순 모형. 공 옮기기·주사위: 무작위 선택과 무작위 눈으로 직접 계산. 열의 이동: 물체마다 입자 100개, 에너지 덩어리 총 400개가 입자 사이를 무작위로 옮겨 다니는 단순 모형이며, 온도는 입자당 평균 에너지, 엔트로피는 경우의 수의 로그를 상대적인 높이로만 나타낸다. 입자 수가 적어 작은 흔들림이 보이지만, 실제 물체(약 10²³개)에서는 보이지 않는다.</footer>
+  <footer>잉크: 입자끼리 부딪히지 않고 벽에서만 튕기는 단순 모형. 공 옮기기·주사위: 무작위 선택과 무작위 눈으로 직접 계산. 열의 이동: 물체마다 입자 400개, 에너지 덩어리 총 1600개가 입자 사이를 무작위로 옮겨 다니는 단순 모형이며, 온도는 입자당 평균 에너지, 엔트로피는 경우의 수의 로그를 상대적인 높이로만 나타낸다. 입자 수가 적어 작은 흔들림이 보이지만, 실제 물체(약 10²³개)에서는 보이지 않는다.</footer>
 </div>
 
 <script>
@@ -175,11 +175,11 @@
     c.fillText(s, x, y);
   }
   function axes(c, w, h, xl, yl) {
-    var b = { l: 34, r: w - 14, t: 26, b: h - 26 };
+    var b = { l: 34, r: w - 14, t: 26, b: h - 42 };
     c.strokeStyle = col.ink; c.lineWidth = 1.5;
     c.beginPath(); c.moveTo(b.l, b.t); c.lineTo(b.l, b.b); c.lineTo(b.r, b.b); c.stroke();
     text(c, yl, b.l - 28, 16);
-    text(c, xl, b.r, h - 6, { a: "right", c: col.muted });
+    text(c, xl, b.r, h - 4, { a: "right", c: col.muted });
     return b;
   }
   function line(c, pts, color, lw) {
@@ -309,11 +309,10 @@
     },
     graph: function (f) {
       var c = f.c, b = axes(c, f.w, f.h, "시간", ""), self = this;
-      text(c, "퍼진 정도", b.l + 6, 16);
       function X(t) { return b.l + t / INK_T * (b.r - b.l - 56); }
       function Y(v) { return b.b - Math.min(1.1, v) / 1.1 * (b.b - b.t); }
       dashed(c, b.l, Y(1), b.r, Y(1), col.line);
-      text(c, "고르게", b.l - 4, Y(1) - 6, { a: "left", c: col.muted });
+      text(c, "고르게 퍼진 상태", b.r, Y(1) - 6, { a: "right", c: col.muted });
       var upto = Math.floor(this.t / INK_T * 60);
       [[this.curveA, col.accent, "영상 A"], [this.curveB, col.mark, "영상 B"]].forEach(function (v) {
         var pts = [];
@@ -376,8 +375,8 @@
     },
     undo: function () {
       if (!this.last) return;
-      var wasL = this.side[this.last.b] === 0;
-      this.move(this.last.b);
+      var wasL = this.side[this.last.b] === 0, bk = this.back;
+      this.move(this.last.b); this.back = bk;
       if (!still) this.fly = { p: 0, toRight: wasL };
       this.undoFrom = this.last.b + 1; this.last = null;
     },
@@ -387,7 +386,7 @@
         { label: "1번 옮기기", primary: true, fn: function () { self.undoFrom = null; self.step(1, true); }, off: this.auto },
         { label: "10번", fn: function () { self.undoFrom = null; self.step(10); }, off: this.auto },
         { label: this.auto ? "자동 멈춤" : "자동 옮기기", fn: function () { self.auto = !self.auto; self.undoFrom = null; } },
-        { label: "방금 옮긴 공 되돌리기", fn: function () { self.undo(); }, off: !this.last || this.auto },
+        { label: "방금 공 되돌리기", fn: function () { self.undo(); }, off: !this.last || this.auto },
         { label: "처음 상태로", fn: function () { self.reset(); } }
       ];
     },
@@ -551,7 +550,7 @@
       var rel = this.table ? Math.log(this.table[s] || 1) / Math.log(this.table[mx]) * 100 : 100;
       return [
         { name: "가능한 숫자 합의 범위", val: comma(n) + " ~ " + comma(6 * n), mean: "굴린 횟수 " + comma(this.rolls) + "번" },
-        { name: "실제로 나온 숫자 합", val: range, mean: n >= 100 ? "가운데 좁은 범위에 몰린다" : "여러 번 굴려 보세요", c: "--mark" },
+        { name: "실제로 나온 숫자 합", val: range, mean: !this.rolls ? "주사위를 굴려 보세요" : n >= 100 ? "가운데 좁은 범위에 몰린다" : "가운데 값이 더 자주 나온다", c: "--mark" },
         { name: "숫자 합 " + comma(n) + "의 경우의 수", val: "1가지", mean: "모든 주사위가 1", c: "--work" },
         { name: "숫자 합 " + comma(s) + "의 경우의 수", val: this.waysText(s), mean: "경우의 수가 많을수록 엔트로피가 크다", bar: rel, c: "--entropy" }
       ];
@@ -597,7 +596,6 @@
     gBox: null,
     graph: function (f) {
       var c = f.c, b = axes(c, f.w, f.h, "숫자 합", ""), n = this.N(), self = this;
-      text(c, "상대적 비율", b.l + 6, 16);
       this.gBox = b;
       var mx = 0, i; for (i = 0; i < this.nb; i++) if (this.bins[i] > mx) mx = this.bins[i];
       var bw = (b.r - b.l) / this.nb;
@@ -655,7 +653,7 @@
   };
 
   /* ---------- 4. 열의 이동: 입자 사이를 에너지 덩어리가 무작위로 옮겨 다닌다 ---------- */
-  var HEAT_N = 100, HEAT_Q = 400;
+  var HEAT_N = 400, HEAT_Q = 1600;
   var LF = [0]; for (var lf = 1; lf <= HEAT_Q + HEAT_N + 2; lf++) LF[lf] = LF[lf - 1] + Math.log(lf);
   function lnOmega(q) { return LF[q + HEAT_N - 1] - LF[q] - LF[HEAT_N - 1]; }
   function heatS(qA) { return lnOmega(qA) + lnOmega(HEAT_Q - qA); }
@@ -678,11 +676,11 @@
     id: "heat", tab: "열의 이동", cond: "물체 A와 B가 맞닿아 있습니다. 입자가 충돌할 때마다 에너지 덩어리가 무작위로 옮겨 갑니다.",
     gTitle: "온도와 엔트로피", gNote: "입자당 평균 에너지를 온도로 나타냄",
     ctrl: { label: "처음 온도 차", ends: ["온도가 같음", "A에 에너지가 모두 있음"], max: HEAT_DS.length - 1 },
-    idx: 3, run: false, speed: 10,
+    idx: 3, run: false, speed: 40,
     D: function () { return HEAT_DS[this.idx]; },
     valText: function () { return this.D() + " %"; },
     fresh: function () {
-      var st = heatInit(this.D()); this.st = st; this.q0 = st.qA; this.steps = 0; this.hist = [[0, st.qA, heatRel(st.qA)]]; this.acc = 0; this.flow = 0; this.backCount = 0; this.settled = false; this.maxAfter = 0; this.run = false; this.speed = 10; this.snap = st.qA; this.snapT = 0;
+      var st = heatInit(this.D()); this.st = st; this.q0 = st.qA; this.steps = 0; this.hist = [[0, st.qA, heatRel(st.qA)]]; this.acc = 0; this.flow = 0; this.backCount = 0; this.settled = false; this.maxAfter = 0; this.run = false; this.speed = 40; this.snap = st.qA; this.snapT = 0;
     },
     init: function () { this.fresh(); },
     setCtrl: function (i) { this.commit(); this.idx = i; this.fresh(); },
@@ -690,8 +688,8 @@
     buttons: function () {
       var self = this;
       return [
-        { label: this.run ? "멈춤" : "시작", primary: true, fn: function () { self.run = !self.run; self.speed = 10; } },
-        { label: "오래 기다리기 (100배 빠르게)", fn: function () { self.run = true; self.speed = 1000; } },
+        { label: this.run ? "멈춤" : "시작", primary: true, fn: function () { self.run = !self.run; self.speed = 40; } },
+        { label: "오래 기다리기 (100배 빠르게)", fn: function () { self.run = true; self.speed = 4000; } },
         { label: "처음 상태로", fn: function () { self.reset(); } }
       ];
     },
@@ -702,7 +700,7 @@
       var q = this.st.qA, d0 = Math.abs(2 * this.q0 - HEAT_Q), dn = Math.abs(2 * q - HEAT_Q);
       if (this.hist.length > 1600) this.hist = this.hist.filter(function (p, i) { return i % 2 === 0; });
       this.hist.push([this.steps, q, heatRel(q)]);
-      if (!this.settled && dn <= Math.max(d0 * 0.1, 8)) this.settled = true;
+      if (!this.settled && dn <= Math.max(d0 * 0.1, 32)) this.settled = true;
       if (this.settled) {
         if (dn > this.maxAfter) this.maxAfter = dn;
         if (d0 > 0 && dn >= d0 && !this.wasBack) { this.backCount++; this.wasBack = true; }
@@ -732,10 +730,10 @@
     },
     scene: function (f) {
       var c = f.c, w = f.w, h = f.h, gapMid = 58, top = 24, sideMax = h - top - 6;
-      var side = Math.min(sideMax, (w - gapMid - 16) / 2), cell = side / 10, xA = w / 2 - gapMid / 2 - side, xB = w / 2 + gapMid / 2, st = this.st;
+      var side = Math.min(sideMax, (w - gapMid - 16) / 2), cell = side / 20, xA = w / 2 - gapMid / 2 - side, xB = w / 2 + gapMid / 2, st = this.st;
       [[xA, 0, "물체 A", col.heat], [xB, HEAT_N, "물체 B", col.accent]].forEach(function (v) {
         for (var i = 0; i < HEAT_N; i++) {
-          var e = st.e[v[1] + i], a = Math.min(1, e / 8), x = v[0] + (i % 10) * cell, y = top + Math.floor(i / 10) * cell;
+          var e = st.e[v[1] + i], a = Math.min(1, e / 8), x = v[0] + (i % 20) * cell, y = top + Math.floor(i / 20) * cell;
           c.fillStyle = col.bg; c.fillRect(x, y, cell, cell);
           if (e > 0) { c.globalAlpha = 0.15 + 0.85 * a; c.fillStyle = col.heat; c.fillRect(x, y, cell, cell); c.globalAlpha = 1; }
         }
@@ -752,7 +750,7 @@
       }
     },
     graph: function (f) {
-      var c = f.c, w = f.w, h = f.h, b = axes(c, w, h, "시간", ""), H = this.hist, tm = Math.max(H[H.length - 1][0], 6000);
+      var c = f.c, w = f.w, h = f.h, b = axes(c, w, h, "시간", ""), H = this.hist, tm = Math.max(H[H.length - 1][0], 24000);
       var mid = b.t + (b.b - b.t) * 0.62;
       function X(t) { return b.l + t / tm * (b.r - b.l - 54); }
       function YT(q) { return mid - 8 - q / HEAT_N / 8 * (mid - 8 - b.t); }
@@ -815,7 +813,7 @@
     }
     out.balls = ballPts;
     var st = heatInit(100), hp = [];
-    for (i = 0; i <= n; i++) { hp.push(Math.abs(2 * st.qA - HEAT_Q) / HEAT_Q); heatStep(st, 500); }
+    for (i = 0; i <= n; i++) { hp.push(Math.abs(2 * st.qA - HEAT_Q) / HEAT_Q); heatStep(st, 2000); }
     out.heat = hp;
     return out;
   }
@@ -985,7 +983,7 @@
 
   var last = 0, uiT = 0;
   function frame(ms) {
-    var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms;
+    var dt = Math.min(0.25, (ms - last) / 1000 || 0); last = ms;
     if (cs) {
       cs.tick(dt);
       cs.scene(fit($("scene")));
