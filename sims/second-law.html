@@ -79,6 +79,19 @@
   <div class="seg" id="cases" role="tablist" aria-label="탐구 주제"></div>
 
   <div class="stack" id="lab">
+    <section class="panel" aria-label="탐구 전 활동">
+      <div class="seg" id="acts" role="tablist" aria-label="탐구 전 활동">
+        <button type="button" role="tab" data-act="predict" aria-selected="true">예상하기</button>
+        <button type="button" role="tab" data-act="think" aria-selected="false">생각해 보기</button>
+      </div>
+      <div id="act-predict" class="predict">
+        <p class="note" id="pred-q"></p>
+        <div class="signs" id="pred-opts" role="group" aria-label="예상 고르기"></div>
+        <p class="msg" id="pred-msg" aria-live="polite"></p>
+      </div>
+      <div id="act-think" hidden><ol class="asks" id="asks"></ol></div>
+    </section>
+
     <div class="cols">
       <section class="panel" aria-label="실험 장치">
         <div class="stage-head">
@@ -102,23 +115,11 @@
     <section class="tiles" id="tiles" aria-label="핵심 수치"></section>
     <p class="msg" id="msg" aria-live="polite"></p>
 
-    <section class="panel" aria-label="탐구 활동">
-      <div class="seg" id="acts" role="tablist" aria-label="탐구 활동">
-        <button type="button" role="tab" data-act="predict" aria-selected="true">예상하기</button>
-        <button type="button" role="tab" data-act="think" aria-selected="false">생각해 보기</button>
-        <button type="button" role="tab" data-act="log" id="tab-log" aria-selected="false">기록</button>
-      </div>
-      <div id="act-predict" class="predict">
-        <p class="note" id="pred-q"></p>
-        <div class="signs" id="pred-opts" role="group" aria-label="예상 고르기"></div>
-        <p class="msg" id="pred-msg" aria-live="polite"></p>
-      </div>
-      <div id="act-think" hidden><ol class="asks" id="asks"></ol></div>
-      <div id="act-log" hidden>
-        <p class="note tbl-note">조건을 바꾸거나 「처음 상태로」를 누르면 결과가 자동으로 쌓입니다.</p>
-        <div class="btn-row tbl-note"><button class="btn" type="button" id="log-now">지금 결과 기록하기</button></div>
-        <div class="table-wrap"><table><thead id="log-head"></thead><tbody id="log-body"></tbody></table></div>
-      </div>
+    <section class="panel" aria-label="기록">
+      <h2 id="log-title">기록</h2>
+      <p class="note">조건을 바꾸거나 「처음 상태로」를 누르면 결과가 자동으로 쌓입니다.</p>
+      <div class="btn-row"><button class="btn" type="button" id="log-now">지금 결과 기록하기</button></div>
+      <div class="table-wrap"><table><thead id="log-head"></thead><tbody id="log-body"></tbody></table></div>
     </section>
   </div>
 
@@ -922,7 +923,7 @@
       r.appendChild(td); b.appendChild(r);
     }
     L.rows.forEach(function (row) { var r = document.createElement("tr"); row.forEach(function (c) { var td = document.createElement("td"); td.textContent = c; r.appendChild(td); }); b.appendChild(r); });
-    $("tab-log").textContent = L.rows.length ? "기록 (" + L.rows.length + ")" : "기록";
+    $("log-title").textContent = L.rows.length ? "기록 (" + L.rows.length + ")" : "기록";
   }
   function renderAsks() {
     var ol = $("asks"); ol.textContent = "";
