@@ -77,7 +77,10 @@
 .signs button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
 .verdict { font-size: 0.875rem; font-weight: 600; }
 .verdict.ok { color: var(--work); } .verdict.no { color: var(--heat); }
-@media (max-width: 40rem) { .prow { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; } }
+/* 세 값을 가로로 나란히 두어 실험대가 너무 아래로 밀리지 않게 한다 */
+#predict { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+#predict .prow { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; align-content: start; }
+@media (max-width: 56rem) { #predict { grid-template-columns: minmax(0, 1fr); } }
 .msg { margin: 0; padding: 0.5rem 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.9375rem; }
 .asks { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; max-width: 46rem; }
 .answer { margin-top: 0.375rem; }
@@ -192,6 +195,25 @@
   </div>
 
   <div class="stack" id="lab" hidden>
+  <section class="panel" aria-label="탐구 전 활동">
+    <div class="seg" id="acts" role="tablist" aria-label="탐구 전 활동">
+      <button type="button" role="tab" id="tab-predict" data-act="predict" aria-selected="true">예상하기</button>
+      <button type="button" role="tab" id="tab-think" data-act="think" aria-selected="false">생각해 보기</button>
+    </div>
+
+    <div id="act-predict">
+      <div class="predict">
+        <p class="note" id="pred-title"></p>
+        <div class="predict" id="predict"></div>
+        <p class="msg" id="pred-msg" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div id="act-think" hidden>
+      <ol class="asks" id="asks"></ol>
+    </div>
+  </section>
+
   <div class="cols">
     <section class="panel" aria-label="실린더와 피스톤">
       <div class="stage-head">
@@ -239,36 +261,15 @@
     </div>
   </section>
 
-  <section class="panel" aria-label="탐구 활동">
-    <div class="seg" id="acts" role="tablist" aria-label="탐구 활동">
-      <button type="button" role="tab" id="tab-predict" data-act="predict" aria-selected="true">예상하기</button>
-      <button type="button" role="tab" id="tab-think" data-act="think" aria-selected="false">생각해 보기</button>
-      <button type="button" role="tab" id="tab-log" data-act="log" aria-selected="false">과정 기록</button>
-    </div>
-
-    <div id="act-predict">
-      <div class="predict">
-        <p class="note" id="pred-title"></p>
-        <div class="predict" id="predict"></div>
-        <p class="msg" id="pred-msg" aria-live="polite"></p>
-      </div>
-    </div>
-
-    <div id="act-think" hidden>
-      <ol class="asks" id="asks"></ol>
-    </div>
-
-    <div id="act-log" hidden>
-      <div class="predict">
-        <p class="note">「여기서 다음 과정 잇기」를 누르거나 다른 과정을 고르면 방금 한 과정이 기록됩니다. 여러 과정을 이어 처음 상태로 돌아오면 ΔU 의 합은 얼마가 될까요?</p>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>과정</th><th>Q (J)</th><th>ΔU (J)</th><th>W (J)</th><th>P (×10⁵ Pa)</th><th>V (×10⁻³ m³)</th><th>T (K)</th></tr></thead>
-            <tbody id="log"></tbody>
-            <tfoot id="log-sum"></tfoot>
-          </table>
-        </div>
-      </div>
+  <section class="panel" aria-label="과정 기록">
+    <h2 id="log-title">과정 기록</h2>
+    <p class="note">「여기서 다음 과정 잇기」를 누르거나 다른 과정을 고르면 방금 한 과정이 기록됩니다. 여러 과정을 이어 처음 상태로 돌아오면 ΔU 의 합은 얼마가 될까요?</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>과정</th><th>Q (J)</th><th>ΔU (J)</th><th>W (J)</th><th>P (×10⁵ Pa)</th><th>V (×10⁻³ m³)</th><th>T (K)</th></tr></thead>
+        <tbody id="log"></tbody>
+        <tfoot id="log-sum"></tfoot>
+      </table>
     </div>
   </section>
   </div>
@@ -573,7 +574,7 @@
 
   function renderPredict() {
     var sc = PROCS[proc].scen, box = $("predict");
-    $("pred-title").textContent = sc.label + "일 때 세 값의 부호를 먼저 예상한 뒤, 직접 움직여 확인해 봅시다.";
+    $("pred-title").textContent = sc.label + "일 때 세 값의 부호를 먼저 예상해 봅시다.";
     box.textContent = "";
     pred[proc] = pred[proc] || {};
     QUANT.forEach(function (q) {
@@ -595,7 +596,7 @@
 
   function renderLog() {
     var tb = $("log"), tf = $("log-sum"); tb.textContent = ""; tf.textContent = "";
-    $("tab-log").textContent = steps.length ? "과정 기록 (" + steps.length + ")" : "과정 기록";
+    $("log-title").textContent = steps.length ? "과정 기록 (" + steps.length + ")" : "과정 기록";
     function row(cells, parent) {
       var tr = document.createElement("tr");
       cells.forEach(function (c) { var td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
@@ -650,7 +651,7 @@
       else { el.classList.add("no"); el.textContent = "예상과 다름 → 실제 " + (actual > 0 ? "+" : actual < 0 ? "−" : "0"); }
     });
     if (!all) msg = "세 가지 부호를 모두 골라 주세요.";
-    else if (d === 0) msg = "이제 " + sc.label + " 과정을 만들어 보세요.";
+    else if (d === 0) msg = "이제 아래 슬라이더를 움직여 " + sc.label + " 과정을 만들어 보세요.";
     else if (d !== sc.dir) msg = "지금은 반대 방향입니다. " + sc.label + " 과정을 만들어 예상과 비교해 보세요.";
     else msg = hit === 3 ? "세 가지 모두 예상과 같습니다. 그렇게 되는 까닭을 열역학 제1법칙으로 설명해 보세요."
                          : "예상과 다른 것이 있습니다. 그림과 그래프를 보고 까닭을 찾아보세요.";
