@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="잉크 확산, 공 옮기기, 주사위, 열의 이동으로 비가역 현상과 엔트로피를 탐구하는 시뮬레이션">
+<title>열역학 제2법칙 탐구</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/sim.css?v=5">
+<style>
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+.page { gap: 0.75rem; padding-block: 0.625rem 3rem; }
+.sim-head h1 { font-size: 1.375rem; }
+@media (max-width: 40rem) { #cases { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* 실험대 */
+.stage-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.25rem 1rem; }
+.status { font-family: var(--font-display); font-weight: 800; font-size: 1.0625rem; }
+.cond { margin: 0; color: var(--muted); font-size: 0.875rem; }
+.panel { gap: 0.5rem; padding: 0.75rem 1rem; }
+#scene { aspect-ratio: 2.55 / 1; touch-action: pan-y; }
+.graph-box { position: relative; flex: 1; min-height: 16rem; }
+.graph-box canvas { position: absolute; inset: 0; height: 100%; touch-action: pan-y; }
+@media (max-width: 56rem) { .graph-box { flex: none; min-height: 0; aspect-ratio: 4 / 3; } #scene { aspect-ratio: 16 / 10; } }
+.slider-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.slider-head label { font-weight: 600; }
+.slider-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.8125rem; margin-top: -0.25rem; }
+.slider-val { font-weight: 700; }
+
+/* 핵심 수치 */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 0.5rem; }
+.tile { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.375rem 0.75rem; border-radius: 10px; border: 1px solid var(--line); border-top: 4px solid var(--c); background: var(--surface); min-width: 0; --c: var(--accent); }
+.tile .name { font-size: 0.875rem; font-weight: 600; color: var(--c); }
+.tile .val { font-weight: 700; font-size: clamp(1.125rem, 2.4vw, 1.5rem); font-variant-numeric: tabular-nums; line-height: 1.25; }
+.tile .mean { font-size: 0.875rem; color: var(--muted); }
+.meter { height: 0.5rem; background: var(--bg); border-radius: 999px; overflow: hidden; }
+.meter div { height: 100%; background: var(--c); border-radius: 999px; }
+
+/* 활동 */
+.msg { margin: 0; padding: 0.4375rem 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.9375rem; }
+.predict { display: flex; flex-direction: column; gap: 0.625rem; }
+.signs { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.signs button { font: inherit; font-size: 0.9375rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.375rem 0.75rem; cursor: pointer; }
+.signs button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.asks { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; max-width: 46rem; }
+.answer { margin-top: 0.375rem; }
+.answer summary { display: inline-block; cursor: pointer; list-style: none; font-size: 0.875rem; font-weight: 600; color: var(--accent); border: 1px solid var(--line); border-radius: 8px; padding: 0.25rem 0.75rem; }
+.answer summary::-webkit-details-marker { display: none; }
+.answer summary::after { content: " ▾"; }
+.answer[open] summary { background: var(--accent-soft); border-color: var(--accent); }
+.answer[open] summary::after { content: " ▴"; }
+.answer p { margin: 0.5rem 0 0; padding: 0.625rem 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.9375rem; }
+.tbl-note { margin-bottom: 0.5rem; }
+
+/* 한눈에 정리 */
+.law-banner { margin: 0; padding: 0.75rem 1rem; background: var(--accent-soft); border-radius: 10px; font-weight: 700; font-size: 1.0625rem; }
+.sum-top { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 1rem; }
+@media (max-width: 56rem) { .sum-top { grid-template-columns: minmax(0, 1fr); } }
+.sum-graph svg { display: block; width: 100%; height: auto; }
+.sum-table th, .sum-table td { text-align: left; white-space: normal; vertical-align: top; }
+.sum-table td:first-child { font-weight: 600; white-space: nowrap; }
+.sum-top [data-id] { cursor: pointer; transition: opacity 0.15s; }
+.sum-top.has-pick [data-id]:not(.on) { opacity: 0.22; }
+.sum-top.has-pick tr.on { background: var(--accent-soft); }
+@media (prefers-reduced-motion: reduce) { .sum-top [data-id] { transition: none; } }
+.sum-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+.sum-card p { margin: 0; }
+.sum-card .btn { align-self: flex-start; margin-top: auto; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="sim-head">
+    <a class="back" href="../index.html">← 물리 수업 자료실</a>
+    <span class="lesson-code">역학과 에너지 · II-2-02</span>
+    <h1>열역학 제2법칙 탐구</h1>
+  </header>
+
+  <div class="seg" id="cases" role="tablist" aria-label="탐구 주제"></div>
+
+  <div class="stack" id="lab">
+    <div class="cols">
+      <section class="panel" aria-label="실험 장치">
+        <div class="stage-head">
+          <div class="status" id="status" aria-live="polite"></div>
+        </div>
+        <p class="cond" id="cond"></p>
+        <canvas id="scene" role="img" aria-label="실험 장치 그림"></canvas>
+        <div>
+          <div class="slider-head"><label for="ctrl" id="ctrl-label"></label><span class="slider-val num" id="ctrl-val"></span></div>
+          <input id="ctrl" type="range" min="0" max="1" step="1" value="0">
+          <div class="slider-ends"><span id="end-lo"></span><span id="end-hi"></span></div>
+        </div>
+        <div class="btn-row" id="btns"></div>
+      </section>
+      <section class="panel" aria-label="그래프">
+        <div class="stage-head"><h2 id="g-title"></h2><span class="note" id="g-note"></span></div>
+        <div class="graph-box"><canvas id="graph" role="img" aria-label="결과 그래프"></canvas></div>
+      </section>
+    </div>
+
+    <section class="tiles" id="tiles" aria-label="핵심 수치"></section>
+    <p class="msg" id="msg" aria-live="polite"></p>
+
+    <section class="panel" aria-label="탐구 활동">
+      <div class="seg" id="acts" role="tablist" aria-label="탐구 활동">
+        <button type="button" role="tab" data-act="predict" aria-selected="true">예상하기</button>
+        <button type="button" role="tab" data-act="think" aria-selected="false">생각해 보기</button>
+        <button type="button" role="tab" data-act="log" id="tab-log" aria-selected="false">기록</button>
+      </div>
+      <div id="act-predict" class="predict">
+        <p class="note" id="pred-q"></p>
+        <div class="signs" id="pred-opts" role="group" aria-label="예상 고르기"></div>
+        <p class="msg" id="pred-msg" aria-live="polite"></p>
+      </div>
+      <div id="act-think" hidden><ol class="asks" id="asks"></ol></div>
+      <div id="act-log" hidden>
+        <p class="note tbl-note">조건을 바꾸거나 「처음 상태로」를 누르면 결과가 자동으로 쌓입니다.</p>
+        <div class="btn-row tbl-note"><button class="btn" type="button" id="log-now">지금 결과 기록하기</button></div>
+        <div class="table-wrap"><table><thead id="log-head"></thead><tbody id="log-body"></tbody></table></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="stack" id="summary" hidden>
+    <p class="law-banner">시간이 지남에 따라 엔트로피가 증가하는 방향으로 변화가 일어난다. 하나하나의 과정은 가역적이어도, 전체의 변화는 비가역적이다.</p>
+    <div class="sum-top">
+      <section class="panel sum-graph" aria-label="네 가지 탐구를 함께 나타낸 그래프">
+        <h2>모두 같은 방향으로 변한다</h2>
+        <div id="sum-graph"></div>
+        <p class="note">위 그래프의 세 선은 이 페이지의 모형을 실제로 계산한 값이다. 주사위 막대는 두 주사위의 숫자 합이 나오는 경우의 수이다.</p>
+      </section>
+      <section class="panel" aria-label="비교 표">
+        <h2>한눈에 비교</h2>
+        <div class="table-wrap">
+          <table class="sum-table">
+            <thead><tr><th>탐구</th><th>하나하나 보면 (미시)</th><th>전체를 보면 (거시)</th><th>엔트로피가 큰 상태</th></tr></thead>
+            <tbody id="sum-rows"></tbody>
+          </table>
+        </div>
+        <p class="note">그래프나 표의 줄을 누르면 그 탐구만 진하게 보입니다. 한 번 더 누르면 원래대로 돌아옵니다.</p>
+      </section>
+    </div>
+    <div class="sum-cards" id="sum-cards"></div>
+  </div>
+
+  <footer>잉크: 입자끼리 부딪히지 않고 벽에서만 튕기는 단순 모형. 공 옮기기·주사위: 무작위 선택과 무작위 눈으로 직접 계산. 열의 이동: 물체마다 입자 100개, 에너지 덩어리 총 400개가 입자 사이를 무작위로 옮겨 다니는 단순 모형이며, 온도는 입자당 평균 에너지, 엔트로피는 경우의 수의 로그를 상대적인 높이로만 나타낸다. 입자 수가 적어 작은 흔들림이 보이지만, 실제 물체(약 10²³개)에서는 보이지 않는다.</footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var FONT = "'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif";
+  var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var col = {};
+  var ORDER = ["ink", "balls", "dice", "heat"];
+  var view = ORDER.concat("sum").indexOf(location.hash.slice(1)) >= 0 ? location.hash.slice(1) : "ink";
+  var cs = null, sp = null;
+
+  /* ---------- 공통 도구 ---------- */
+  function colors() {
+    var s = getComputedStyle(document.documentElement);
+    ["ink", "muted", "line", "accent", "surface", "bg", "heat", "work", "inner", "mark", "entropy"].forEach(function (n) { col[n] = s.getPropertyValue("--" + n).trim(); });
+  }
+  function fit(cv) {
+    var w = cv.clientWidth, h = cv.clientHeight, dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+    return { c: c, w: w, h: h };
+  }
+  function text(c, s, x, y, o) {
+    o = o || {};
+    c.font = (o.w || 600) + " " + (o.s || 14) + "px " + FONT;
+    c.fillStyle = o.c || col.ink; c.textAlign = o.a || "left"; c.textBaseline = o.b || "alphabetic";
+    c.fillText(s, x, y);
+  }
+  function axes(c, w, h, xl, yl) {
+    var b = { l: 34, r: w - 14, t: 26, b: h - 26 };
+    c.strokeStyle = col.ink; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(b.l, b.t); c.lineTo(b.l, b.b); c.lineTo(b.r, b.b); c.stroke();
+    text(c, yl, b.l - 28, 16);
+    text(c, xl, b.r, h - 6, { a: "right", c: col.muted });
+    return b;
+  }
+  function line(c, pts, color, lw) {
+    if (!pts.length) return;
+    c.strokeStyle = color; c.lineWidth = lw || 2.5; c.lineJoin = "round"; c.beginPath();
+    pts.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+    c.stroke();
+  }
+  function dashed(c, x1, y1, x2, y2, color) {
+    c.save(); c.setLineDash([5, 5]); c.strokeStyle = color; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.restore();
+  }
+  function arrow(c, x1, y1, x2, y2, color, lw) {
+    var ang = Math.atan2(y2 - y1, x2 - x1), hd = 10;
+    c.strokeStyle = color; c.fillStyle = color; c.lineWidth = lw || 4; c.lineCap = "round";
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(ang) * hd * 0.7, y2 - Math.sin(ang) * hd * 0.7); c.stroke();
+    c.beginPath(); c.moveTo(x2, y2);
+    c.lineTo(x2 - hd * Math.cos(ang - 0.5), y2 - hd * Math.sin(ang - 0.5));
+    c.lineTo(x2 - hd * Math.cos(ang + 0.5), y2 - hd * Math.sin(ang + 0.5));
+    c.closePath(); c.fill();
+    c.lineCap = "butt";
+  }
+  function rnd(n) { return Math.floor(Math.random() * n); }
+  function comma(n) { return Math.round(n).toLocaleString("ko-KR"); }
+  function sup(k) {
+    var m = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻" };
+    return String(k).split("").map(function (d) { return m[d]; }).join("");
+  }
+  function setText(el, s) { if (el.textContent !== s) el.textContent = s; }
+
+  /* ---------- 1. 잉크: 입자는 벽에서만 튕기므로 시간을 뒤집으면 정확히 되돌아간다 ---------- */
+  var INK_T = 9, INK_NS = [1, 3, 10, 50, 300, 1000];
+  function tri(u) { u = u % 2; if (u < 0) u += 2; return u > 1 ? 2 - u : u; }
+  function inkSet(n) {
+    var cx = 0.3 + Math.random() * 0.4, cy = 0.08 + Math.random() * 0.3, a = [];
+    for (var i = 0; i < n; i++) {
+      var th = Math.random() * Math.PI * 2, sp0 = 0.25 + Math.random() * 0.45;
+      a.push({ x: cx + (Math.random() - 0.5) * 0.08, y: cy + (Math.random() - 0.5) * 0.08, vx: Math.cos(th) * sp0, vy: Math.sin(th) * sp0 });
+    }
+    return a;
+  }
+  /* 퍼진 정도: 입자들이 흩어진 정도(표준 편차)를 고르게 퍼졌을 때의 값으로 나눈 것. 입자가 1개이면 항상 0 */
+  function inkSpread(set, tau) {
+    var n = set.length, mx = 0, my = 0, v = 0, i, x, y;
+    for (i = 0; i < n; i++) { mx += tri(set[i].x + set[i].vx * tau); my += tri(set[i].y + set[i].vy * tau); }
+    mx /= n; my /= n;
+    for (i = 0; i < n; i++) { x = tri(set[i].x + set[i].vx * tau) - mx; y = tri(set[i].y + set[i].vy * tau) - my; v += x * x + y * y; }
+    return Math.sqrt(v / n) / Math.sqrt(2 / 12);
+  }
+  var ink = {
+    id: "ink", tab: "잉크", title: "거꾸로 재생된 영상은 어느 쪽일까?",
+    cond: "두 영상 중 하나는 거꾸로 재생된 것입니다. 입자 수를 바꾸며 맞혀 보세요.",
+    gTitle: "퍼진 정도", gNote: "입자들이 흩어진 정도",
+    ctrl: { label: "입자 수", ends: ["입자 1개", "입자 1000개"], max: INK_NS.length - 1 },
+    idx: 4, t: 0, hold: 0, playing: !still, A: null, B: null, rev: "A", answered: null, right: 0, total: 0, small: false, large: false,
+    N: function () { return INK_NS[this.idx]; },
+    valText: function () { return this.N() + "개"; },
+    round: function () {
+      var n = this.N(); this.A = inkSet(n); this.B = inkSet(n); this.rev = Math.random() < 0.5 ? "A" : "B";
+      this.answered = null; this.t = 0; this.hold = 0;
+      var self = this;
+      this.curveA = []; this.curveB = [];
+      for (var i = 0; i <= 60; i++) {
+        var t = INK_T * i / 60;
+        this.curveA.push(inkSpread(self.A, self.rev === "A" ? INK_T - t : t));
+        this.curveB.push(inkSpread(self.B, self.rev === "B" ? INK_T - t : t));
+      }
+    },
+    init: function () { this.round(); },
+    setCtrl: function (i) { this.idx = i; this.round(); },
+    reset: function () { this.right = 0; this.total = 0; this.round(); },
+    answer: function (w) {
+      if (this.answered) return;
+      this.answered = w; this.total++;
+      var ok = w === this.rev; if (ok) this.right++;
+      if (this.N() <= 3) this.small = true;
+      if (this.N() >= 50) this.large = true;
+      this.log.rows.push([this.N() + "개", "영상 " + w, "영상 " + this.rev, ok ? "맞힘" : "틀림"]);
+      renderLog();
+    },
+    buttons: function () {
+      var self = this;
+      return [
+        { label: "A가 거꾸로", primary: true, fn: function () { self.answer("A"); }, off: !!this.answered },
+        { label: "B가 거꾸로", primary: true, fn: function () { self.answer("B"); }, off: !!this.answered },
+        { label: "다음 문제", fn: function () { self.round(); } },
+        { label: this.playing ? "멈춤" : "재생", fn: function () { self.playing = !self.playing; } },
+        { label: "처음 상태로", fn: function () { self.reset(); } }
+      ];
+    },
+    tick: function (dt) {
+      if (!this.playing) return;
+      if (this.t < INK_T) this.t = Math.min(INK_T, this.t + dt);
+      else { this.hold += dt; if (this.hold > 1.4) { this.t = 0; this.hold = 0; } }
+    },
+    status: function () { return this.title; },
+    tiles: function () {
+      var n = this.N(), big = n >= 50;
+      return [
+        { name: "맞힌 문제", val: this.right + " / " + this.total, mean: this.total ? "입자 수를 바꿔 가며 비교" : "먼저 한 문제 풀어 보세요" },
+        { name: "입자 하나의 운동", val: "가역적", mean: "거꾸로 돌려도 어색하지 않다", c: "--work" },
+        { name: "입자 " + n + "개의 전체 모습", val: big ? "비가역적" : n === 1 ? "구분 불가" : "구분 어려움", mean: big ? "저절로 다시 모이는 일은 볼 수 없다" : "거꾸로 봐도 이상하지 않다", c: "--entropy" }
+      ];
+    },
+    msg: function () {
+      if (!this.answered) return "입자가 모여드는 영상이 보이나요? 어느 영상이 거꾸로 재생인지 골라 보세요.";
+      var ok = this.answered === this.rev;
+      return (ok ? "맞았습니다. " : "아쉽습니다. ") + "거꾸로 재생된 것은 영상 " + this.rev + "입니다." + (this.N() <= 3 ? " 입자가 적으면 구분할 근거가 거의 없습니다." : "");
+    },
+    scene: function (f) {
+      var c = f.c, w = f.w, h = f.h, gap = 18, bw = (w - gap * 3) / 2, top = 22, bot = h - 6, self = this;
+      var r = { 1: 6, 3: 5, 10: 4, 50: 3, 300: 2, 1000: 1.4 }[this.N()];
+      [["A", this.A, gap], ["B", this.B, gap * 2 + bw]].forEach(function (v) {
+        var x0 = v[2], tau = self.rev === v[0] ? INK_T - self.t : self.t, tag = "영상 " + v[0];
+        if (self.answered) tag += self.rev === v[0] ? " · 거꾸로 재생" : " · 원래 영상";
+        text(c, tag, x0 + bw / 2, 15, { a: "center", c: self.answered && self.rev === v[0] ? col.heat : col.ink });
+        c.fillStyle = col.accent + "14"; c.fillRect(x0, top, bw, bot - top);
+        c.strokeStyle = col.ink; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(x0, top); c.lineTo(x0, bot); c.lineTo(x0 + bw, bot); c.lineTo(x0 + bw, top); c.stroke();
+        c.fillStyle = col.accent;
+        v[1].forEach(function (p) {
+          c.beginPath();
+          c.arc(x0 + 5 + tri(p.x + p.vx * tau) * (bw - 10), top + 5 + tri(p.y + p.vy * tau) * (bot - top - 10), r, 0, Math.PI * 2);
+          c.fill();
+        });
+      });
+    },
+    graph: function (f) {
+      var c = f.c, b = axes(c, f.w, f.h, "시간", ""), self = this;
+      text(c, "퍼진 정도", b.l + 6, 16);
+      function X(t) { return b.l + t / INK_T * (b.r - b.l - 56); }
+      function Y(v) { return b.b - Math.min(1.1, v) / 1.1 * (b.b - b.t); }
+      dashed(c, b.l, Y(1), b.r, Y(1), col.line);
+      text(c, "고르게", b.l - 4, Y(1) - 6, { a: "left", c: col.muted });
+      var upto = Math.floor(this.t / INK_T * 60);
+      [[this.curveA, col.accent, "영상 A"], [this.curveB, col.mark, "영상 B"]].forEach(function (v) {
+        var pts = [];
+        for (var i = 0; i <= upto; i++) pts.push([X(INK_T * i / 60), Y(v[0][i])]);
+        line(c, pts, v[1], 3);
+        var e = pts[pts.length - 1];
+        text(c, v[2], e[0] + 6, e[1] + 5, { c: v[1] });
+      });
+      void self;
+    },
+    pred: {
+      q: "입자가 적을 때와 많을 때, 거꾸로 재생을 알아차리기 쉬운 쪽은 어디일까요?",
+      opts: ["입자가 적을 때", "입자가 많을 때", "똑같다"], ans: 1,
+      ready: function () { return ink.small && ink.large; },
+      wait: "입자 3개 이하와 50개 이상에서 각각 한 문제씩 풀어 보세요.",
+      ok: "입자가 많을수록 전체의 변화에 방향이 뚜렷해집니다.",
+      no: "실제로는 입자가 많을 때 알아차리기 쉽습니다. 한곳에 모여드는 모습이 어색하기 때문입니다."
+    },
+    asks: [
+      { q: "입자 하나만 볼 때와 전체를 볼 때, 거꾸로 재생을 알아차리기 쉬운 쪽은? 그 까닭은?",
+        a: "전체를 볼 때이다. 입자 하나의 운동은 거꾸로 돌려도 자연스럽지만(가역적), 수많은 입자가 저절로 한곳에 모여드는 일은 일어나지 않기 때문이다(비가역적)." },
+      { q: "자연의 변화는 왜 항상 한 방향으로만 일어날까?",
+        a: "입자들이 고르게 퍼진 배열의 경우의 수가 한곳에 모인 배열의 경우의 수보다 압도적으로 많기 때문이다. 변화는 확률이 큰 상태, 즉 엔트로피가 큰 상태로 일어난다." }
+    ],
+    log: { cols: ["입자 수", "고른 답", "거꾸로 재생", "결과"], rows: [] },
+    commit: function () {}
+  };
+
+  /* ---------- 2. 공 옮기기: 공 번호를 무작위로 뽑아 반대쪽 바구니로 옮긴다 ---------- */
+  var BALL_NS = [20, 100, 1000, 10000];
+  var balls = {
+    id: "balls", tab: "공 옮기기", cond: "정20면체 주사위처럼 공 번호를 무작위로 뽑아, 그 공을 반대쪽 바구니로 옮깁니다.",
+    gTitle: "왼쪽 바구니 공의 비율", gNote: "회색 선: 앞서 해 본 공 개수",
+    ctrl: { label: "공의 개수", ends: ["20개", "10,000개"], max: BALL_NS.length - 1 },
+    idx: 0, auto: false, prev: [], fly: null, frac: 0,
+    N: function () { return BALL_NS[this.idx]; },
+    valText: function () { return comma(this.N()) + "개"; },
+    fresh: function () {
+      var n = this.N(); this.side = new Uint8Array(n); this.nL = n; this.tries = 0; this.back = 0; this.last = null; this.undoFrom = null;
+      this.hist = [[0, 100]]; this.fly = null; this.frac = 0;
+    },
+    init: function () { this.fresh(); },
+    setCtrl: function (i) { this.commit(); this.keep(); this.idx = i; this.fresh(); },
+    keep: function () { if (this.tries > 0) { this.prev.push({ N: this.N(), pts: this.hist }); if (this.prev.length > 3) this.prev.shift(); } },
+    reset: function () { this.commit(); this.prev = []; this.auto = false; this.fresh(); },
+    move: function (b) {
+      var n = this.N();
+      if (this.side[b] === 0) { this.side[b] = 1; this.nL--; } else { this.side[b] = 0; this.nL++; if (this.nL === n && this.tries > 0) this.back++; }
+      this.tries++;
+      var x = this.tries / n;
+      if (this.hist.length > 1500) this.hist = this.hist.filter(function (p, i) { return i % 2 === 0; });
+      this.hist.push([x, this.nL / n * 100]);
+    },
+    step: function (k, anim) {
+      for (var i = 0; i < k; i++) {
+        var b = rnd(this.N()), wasL = this.side[b] === 0;
+        this.move(b); this.last = { b: b, toRight: wasL };
+        if (anim && !still) this.fly = { p: 0, toRight: wasL };
+      }
+    },
+    undo: function () {
+      if (!this.last) return;
+      var wasL = this.side[this.last.b] === 0;
+      this.move(this.last.b);
+      if (!still) this.fly = { p: 0, toRight: wasL };
+      this.undoFrom = this.last.b + 1; this.last = null;
+    },
+    buttons: function () {
+      var self = this;
+      return [
+        { label: "1번 옮기기", primary: true, fn: function () { self.undoFrom = null; self.step(1, true); }, off: this.auto },
+        { label: "10번", fn: function () { self.undoFrom = null; self.step(10); }, off: this.auto },
+        { label: this.auto ? "자동 멈춤" : "자동 옮기기", fn: function () { self.auto = !self.auto; self.undoFrom = null; } },
+        { label: "방금 옮긴 공 되돌리기", fn: function () { self.undo(); }, off: !this.last || this.auto },
+        { label: "처음 상태로", fn: function () { self.reset(); } }
+      ];
+    },
+    tick: function (dt) {
+      if (this.fly) { this.fly.p += dt * 3; if (this.fly.p >= 1) this.fly = null; }
+      if (this.auto) {
+        this.frac += this.N() / 4 * dt;
+        var k = Math.floor(this.frac); this.frac -= k;
+        if (k > 0) this.step(k);
+      }
+    },
+    status: function () {
+      if (this.undoFrom) return this.undoFrom + "번 공을 되돌렸습니다. 공 한 개의 이동은 가역적입니다.";
+      if (!this.last) return "모든 공이 왼쪽 바구니에 있습니다.";
+      return (this.last.b + 1) + "번 공을 " + (this.last.toRight ? "왼쪽 → 오른쪽" : "오른쪽 → 왼쪽") + "으로 옮겼습니다.";
+    },
+    tiles: function () {
+      var n = this.N(), l = this.nL / n * 100, lg = Math.round(n * Math.LOG10E * Math.LN2);
+      return [
+        { name: "왼쪽 바구니", val: comma(this.nL) + "개", bar: l, mean: "옮긴 횟수 " + comma(this.tries) + "번" },
+        { name: "오른쪽 바구니", val: comma(n - this.nL) + "개", bar: 100 - l, c: "--mark" },
+        { name: "처음 상태로 돌아간 횟수", val: this.back + "번", mean: "모든 공이 다시 왼쪽에 모인 횟수", c: "--work" },
+        { name: "어느 순간 모두 왼쪽에 있을 확률", val: n === 20 ? "약 100만 분의 1" : "약 10" + sup(-lg), mean: "공 개수가 늘수록 사실상 0", c: "--entropy" }
+      ];
+    },
+    msg: function () {
+      if (this.tries === 0) return "먼저 1번씩 옮겨 본 뒤, 자동으로 여러 번 옮겨 보세요.";
+      var x = this.tries / this.N();
+      return x < 1.5 ? "처음에는 왼쪽에 공이 많아 왼쪽 공이 뽑힐 확률이 큽니다." : "두 바구니의 공 수가 비슷해지면 어느 쪽에서 뽑힐지도 비슷해집니다. 공이 많을수록 흔들림이 작습니다.";
+    },
+    scene: function (f) {
+      var c = f.c, w = f.w, h = f.h, self = this, n = this.N();
+      var bw = Math.min(w * 0.38, 210), top = 34, bot = h - 8;
+      [[w * 0.27, this.nL, col.accent, "왼쪽"], [w * 0.73, n - this.nL, col.mark, "오른쪽"]].forEach(function (v) {
+        var cx = v[0], t = bw / 2, b = bw / 2 - 12;
+        if (n > 100) {
+          var fr = v[1] / n, H = bot - top, y = bot - H * fr, wy = b + (t - b) * fr;
+          c.fillStyle = v[2] + "aa";
+          c.beginPath(); c.moveTo(cx - b, bot); c.lineTo(cx + b, bot); c.lineTo(cx + wy, y); c.lineTo(cx - wy, y); c.closePath(); c.fill();
+        } else {
+          var r = n === 20 ? Math.min(11, (bot - top) / 10) : Math.min(5, (bot - top) / 22), per = Math.floor((2 * b - 4) / (2 * r + 1)), i;
+          c.fillStyle = v[2];
+          for (i = 0; i < v[1]; i++) {
+            var row = Math.floor(i / per), k = i % per;
+            c.beginPath(); c.arc(cx - (per - 1) * (r + 0.5) + k * (2 * r + 1), bot - r - 2 - row * (2 * r + 1), r, 0, Math.PI * 2); c.fill();
+          }
+        }
+        c.strokeStyle = col.ink; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(cx - t, top); c.lineTo(cx - b, bot); c.lineTo(cx + b, bot); c.lineTo(cx + t, top); c.stroke();
+        text(c, v[3] + " " + comma(v[1]) + "개", cx, 20, { a: "center", s: 15, w: 700, c: v[2] });
+      });
+      if (this.fly) {
+        var p = this.fly.p, a = w * (this.fly.toRight ? 0.27 : 0.73), z = w * (this.fly.toRight ? 0.73 : 0.27);
+        var x = a + (z - a) * p, y = bot - 40 - Math.sin(p * Math.PI) * (h - 70);
+        c.fillStyle = col.work; c.strokeStyle = col.surface; c.lineWidth = 2;
+        c.beginPath(); c.arc(x, y, 8, 0, Math.PI * 2); c.fill(); c.stroke();
+      }
+      void self;
+    },
+    graph: function (f) {
+      var c = f.c, b = axes(c, f.w, f.h, "옮긴 횟수 ÷ 공의 개수", ""), self = this;
+      text(c, "왼쪽 비율 (%)", b.l + 6, 16);
+      var cur = this.hist[this.hist.length - 1][0], xm = Math.max(3, Math.ceil(cur));
+      function X(x) { return b.l + x / xm * (b.r - b.l); }
+      function Y(v) { return b.b - v / 100 * (b.b - b.t); }
+      [0, 50, 100].forEach(function (v) { text(c, String(v), b.l - 6, Y(v) + 5, { a: "right", c: col.muted }); });
+      dashed(c, b.l, Y(50), b.r, Y(50), col.muted);
+      for (var i = 1; i <= xm; i += Math.ceil(xm / 6)) text(c, String(i), X(i), b.b + 18, { a: "center", c: col.muted });
+      this.prev.forEach(function (r) { line(c, r.pts.map(function (p) { return [X(p[0]), Y(p[1])]; }), col.line, 2); });
+      line(c, this.hist.map(function (p) { return [X(p[0]), Y(p[1])]; }), col.accent, 2.5);
+      void self;
+    },
+    pred: {
+      q: "공을 아주 많이 옮기면 왼쪽 바구니 공의 비율은 어떻게 될까요?",
+      opts: ["거의 100 %", "50 % 근처", "거의 0 %"], ans: 1,
+      ready: function () { return balls.tries >= balls.N() * 3; },
+      wait: "「자동 옮기기」로 공 개수의 3배 이상 옮겨 보세요.",
+      ok: "두 바구니의 공 수가 비슷한 상태의 경우의 수가 가장 많습니다.",
+      no: "실제로는 50 % 근처에 머무릅니다. 두 바구니의 공 수가 비슷한 상태의 경우의 수가 가장 많기 때문입니다."
+    },
+    asks: [
+      { q: "공 옮기기를 여러 번 반복한 후 두 바구니 속 공의 개수는 어떻게 나누어져 있을까?",
+        a: "두 바구니의 공의 개수가 거의 같아진다. 처음에는 왼쪽 공이 뽑힐 확률이 크지만, 개수가 비슷해지면 어느 쪽에서 뽑힐지도 비슷해지기 때문이다." },
+      { q: "이 상태에서 공 옮기기를 계속하면 처음 상태로 다시 돌아갈 수 있을까?",
+        a: "불가능하지는 않지만 확률이 매우 작다. 공이 20개이면 모든 공이 왼쪽에 있는 상태는 약 100만 가지 중 1가지뿐이다. 공의 개수가 많아질수록 사실상 일어나지 않는다." },
+      { q: "공이 20개가 아니라 10²³개라고 생각해 보자. 공이 담긴 모습이 변해가는 과정은 가역 과정일까, 비가역 과정일까?",
+        a: "비가역 과정이다. 공 한 개를 옮기는 과정은 가역적이지만, 공의 전체적인 분포가 변해가는 과정은 처음 상태로 돌아갈 확률이 사실상 0이다. 이것이 미시적인 가역 과정이 거시적인 비가역 과정을 만드는 원리이다." }
+    ],
+    log: { cols: ["공의 개수", "옮긴 횟수", "왼쪽", "오른쪽", "처음 상태로 돌아간 횟수"], rows: [] },
+    commit: function () {
+      if (this.tries > 0) { this.log.rows.push([comma(this.N()) + "개", comma(this.tries), comma(this.nL), comma(this.N() - this.nL), this.back]); renderLog(); }
+    }
+  };
+
+  /* ---------- 3. 주사위 ---------- */
+  var DICE_NS = [2, 10, 100, 1000, 10000];
+  /* 주사위 n개의 숫자 합이 나오는 경우의 수 (n ≤ 10 은 정확히 계산) */
+  function waysTable(n) {
+    var a = [1], k, i, f;
+    for (k = 0; k < n; k++) {
+      var nx = []; for (i = 0; i < a.length + 6; i++) nx[i] = 0;
+      for (i = 0; i < a.length; i++) for (f = 1; f <= 6; f++) nx[i + f] += a[i];
+      a = nx;
+    }
+    return a;
+  }
+  var dice = {
+    id: "dice", tab: "주사위", cond: "상자 밖에서는 숫자 합만 보입니다. 숫자 합은 거시적 현상, 주사위의 숫자 조합은 미시적 배열입니다.",
+    gNote: "주사위 2개·10개는 막대를 눌러 보세요",
+    ctrl: { label: "주사위 개수", ends: ["2개", "10,000개"], max: DICE_NS.length - 1 },
+    idx: 0, auto: false, open: false, frac: 0,
+    N: function () { return DICE_NS[this.idx]; },
+    valText: function () { return comma(this.N()) + "개"; },
+    get gTitle() { return "숫자 합의 상대적 비율"; },
+    fresh: function () {
+      var n = this.N(); this.nb = Math.min(5 * n + 1, 121); this.bins = new Float64Array(this.nb); this.rolls = 0; this.sum = null; this.face = [];
+      this.min = Infinity; this.max = -Infinity; this.pick = 7 * n / 2; this.table = n <= 10 ? waysTable(n) : null; this.frac = 0;
+    },
+    init: function () { this.fresh(); },
+    setCtrl: function (i) { this.commit(); this.idx = i; this.auto = false; this.fresh(); },
+    reset: function () { this.commit(); this.auto = false; this.fresh(); },
+    roll: function (k) {
+      var n = this.N();
+      for (var r = 0; r < k; r++) {
+        var s = 0, fc = [];
+        for (var i = 0; i < n; i++) { var v = 1 + rnd(6); s += v; if (i < 40) fc.push(v); }
+        this.sum = s; this.face = fc; this.rolls++;
+        if (s < this.min) this.min = s; if (s > this.max) this.max = s;
+        var bi = Math.min(this.nb - 1, Math.floor((s - n) / (5 * n + 1) * this.nb)); this.bins[bi]++;
+      }
+    },
+    best: function () {
+      var bi = 0, i; for (i = 1; i < this.nb; i++) if (this.bins[i] > this.bins[bi]) bi = i;
+      return this.nb === 5 * this.N() + 1 ? bi + this.N() : null;
+    },
+    buttons: function () {
+      var self = this;
+      return [
+        { label: "1번 굴리기", primary: true, fn: function () { self.roll(1); }, off: this.auto },
+        { label: "100번", fn: function () { self.roll(100); }, off: this.auto },
+        { label: this.auto ? "자동 멈춤" : "자동 굴리기", fn: function () { self.auto = !self.auto; } },
+        { label: this.open ? "상자 닫기" : "상자 열어 보기", fn: function () { self.open = !self.open; } },
+        { label: "처음 상태로", fn: function () { self.reset(); } }
+      ];
+    },
+    tick: function (dt) {
+      if (!this.auto) return;
+      this.frac += { 2: 30, 10: 30, 100: 100, 1000: 60, 10000: 20 }[this.N()] * dt;
+      var k = Math.floor(this.frac); this.frac -= k; if (k) this.roll(k);
+    },
+    status: function () { return this.sum === null ? "주사위를 굴려 보세요." : "표시 장치: 숫자 합 " + comma(this.sum); },
+    waysText: function (s) {
+      var n = this.N();
+      if (this.table) return comma(this.table[s]) + "가지";
+      var sd = Math.sqrt(n * 35 / 12);
+      return "약 10" + sup(Math.round(n * Math.log(6) * Math.LOG10E - Math.log(sd * Math.sqrt(2 * Math.PI)) * Math.LOG10E)) + "가지";
+    },
+    tiles: function () {
+      var n = this.N(), s = this.pick, mx = 7 * n / 2;
+      var range = this.rolls ? comma(this.min) + " ~ " + comma(this.max) : "—";
+      var rel = this.table ? Math.log(this.table[s] || 1) / Math.log(this.table[mx]) * 100 : 100;
+      return [
+        { name: "가능한 숫자 합의 범위", val: comma(n) + " ~ " + comma(6 * n), mean: "굴린 횟수 " + comma(this.rolls) + "번" },
+        { name: "실제로 나온 숫자 합", val: range, mean: n >= 100 ? "가운데 좁은 범위에 몰린다" : "여러 번 굴려 보세요", c: "--mark" },
+        { name: "숫자 합 " + comma(n) + "의 경우의 수", val: "1가지", mean: "모든 주사위가 1", c: "--work" },
+        { name: "숫자 합 " + comma(s) + "의 경우의 수", val: this.waysText(s), mean: "경우의 수가 많을수록 엔트로피가 크다", bar: rel, c: "--entropy" }
+      ];
+    },
+    msg: function () {
+      var n = this.N(), s = this.pick;
+      if (n === 2) {
+        var list = [], a;
+        for (a = 1; a <= 6; a++) { var b = s - a; if (b >= 1 && b <= 6) list.push("(" + a + ", " + b + ")"); }
+        return "숫자 합 " + s + "이 나오는 조합: " + list.join(" ") + " → " + list.length + "가지";
+      }
+      return n >= 100 ? "주사위가 많을수록 숫자 합은 특정 숫자에서 많이 나옵니다." : "막대를 누르면 그 숫자 합의 경우의 수가 나옵니다.";
+    },
+    drawDie: function (c, x, y, s, v) {
+      c.fillStyle = col.surface; c.strokeStyle = col.ink; c.lineWidth = 1.5;
+      c.beginPath();
+      if (c.roundRect) c.roundRect(x, y, s, s, s * 0.16); else c.rect(x, y, s, s);
+      c.fill(); c.stroke();
+      var P = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
+      c.fillStyle = col.ink;
+      P[v].forEach(function (q) { c.beginPath(); c.arc(x + s / 2 + q[0] * s * 0.26, y + s / 2 + q[1] * s * 0.26, Math.max(1, s * 0.085), 0, Math.PI * 2); c.fill(); });
+    },
+    scene: function (f) {
+      var c = f.c, w = f.w, h = f.h, n = this.N(), bx = 8, bw = this.open ? Math.min(150, w * 0.32) : Math.min(260, w * 0.6), self = this;
+      if (!this.open) bx = (w - bw) / 2;
+      var by = 8, bh = h - 16;
+      c.fillStyle = col.bg; c.strokeStyle = col.ink; c.lineWidth = 2;
+      c.fillRect(bx, by, bw, bh); c.strokeRect(bx, by, bw, bh);
+      text(c, "밀폐된 상자", bx + bw / 2, by + 22, { a: "center", c: col.muted });
+      var dx = bx + 14, dw = bw - 28, dy = by + 34, dh = bh - 48;
+      c.fillStyle = col.ink; c.fillRect(dx, dy, dw, dh);
+      var num = this.sum === null ? "–" : comma(this.sum);
+      text(c, num, dx + dw / 2, dy + dh / 2 + 1, { a: "center", b: "middle", s: Math.min(46, dh * 0.6, dw / (num.length * 0.62 + 0.3)), w: 800, c: col.surface });
+      if (!this.open) return;
+      var x0 = bx + bw + 14, W = w - x0 - 6, shown = this.face.length;
+      text(c, "상자 속 숫자 조합 (미시적 배열)", x0, 22, {});
+      if (!shown) { text(c, "주사위를 굴려 보세요.", x0, 50, { c: col.muted }); return; }
+      var s = n === 2 ? Math.min(66, W / 2.4, h - 60) : n === 10 ? Math.min(38, W / 5.5, (h - 50) / 2.3) : Math.min(22, Math.sqrt(W * (h - 62) / 46));
+      var per = Math.max(1, Math.floor(W / (s + 5)));
+      this.face.forEach(function (v, i) { self.drawDie(c, x0 + (i % per) * (s + 5), 32 + Math.floor(i / per) * (s + 5), s, v); });
+      if (n > 40) text(c, "… 외 " + comma(n - 40) + "개", x0, h - 6, { c: col.muted });
+    },
+    gBox: null,
+    graph: function (f) {
+      var c = f.c, b = axes(c, f.w, f.h, "숫자 합", ""), n = this.N(), self = this;
+      text(c, "상대적 비율", b.l + 6, 16);
+      this.gBox = b;
+      var mx = 0, i; for (i = 0; i < this.nb; i++) if (this.bins[i] > mx) mx = this.bins[i];
+      var bw = (b.r - b.l) / this.nb;
+      for (i = 0; i < this.nb; i++) {
+        if (!this.bins[i]) continue;
+        var H = this.bins[i] / mx * (b.b - b.t);
+        var isPick = this.nb === 5 * n + 1 && i + n === this.pick;
+        c.fillStyle = isPick ? col.entropy : col.accent;
+        c.fillRect(b.l + i * bw + (bw > 6 ? 1 : 0), b.b - H, Math.max(bw - (bw > 6 ? 2 : 0), 1.5), H);
+      }
+      /* 주사위 2개는 경우의 수로 계산한 이론값을 점으로 함께 표시 */
+      if (n === 2 && this.rolls) {
+        var total = this.rolls;
+        for (var s = 2; s <= 12; s++) {
+          var th = this.table[s] / 36 * total / mx * (b.b - b.t);
+          c.fillStyle = col.ink; c.beginPath(); c.arc(b.l + (s - 2 + 0.5) * bw, b.b - Math.min(th, b.b - b.t), 3.5, 0, Math.PI * 2); c.fill();
+        }
+        text(c, "● 경우의 수로 계산한 값", b.r, 16, { a: "right", c: col.muted });
+      }
+      if (n === 2) { for (i = 2; i <= 12; i++) text(c, String(i), b.l + (i - 2 + 0.5) * bw, b.b + 18, { a: "center", c: col.muted }); }
+      else {
+        [n, 3.5 * n, 6 * n].forEach(function (v, k) {
+          text(c, comma(v), b.l + (v - n) / (5 * n) * (b.r - b.l), b.b + 18, { a: k === 0 ? "left" : "center", c: col.muted });
+        });
+      }
+      void self;
+    },
+    press: function (e) {
+      var n = this.N(), b = this.gBox;
+      if (!b || !this.table) return;
+      var r = $("graph").getBoundingClientRect(), x = e.clientX - r.left;
+      if (x < b.l || x > b.r) return;
+      this.pick = Math.max(n, Math.min(6 * n, n + Math.floor((x - b.l) / (b.r - b.l) * (5 * n + 1))));
+    },
+    pred: {
+      q: "주사위 2개를 던지면 숫자 합은 어떤 값이 가장 자주 나올까요?",
+      opts: ["2", "7", "12", "모두 같다"], ans: 1,
+      ready: function () { return dice.N() === 2 && dice.rolls >= 100; },
+      wait: "주사위 2개로 100번 이상 굴려 보세요.",
+      ok: "숫자 합 7은 6가지 조합으로 만들 수 있어 경우의 수가 가장 많습니다.",
+      no: "실제로는 7이 가장 자주 나옵니다. 7은 6가지 조합으로 만들 수 있어 경우의 수가 가장 많습니다."
+    },
+    asks: [
+      { q: "두 주사위의 숫자 합으로 어떤 숫자가 나올 확률이 가장 높은지 설명해 보자.",
+        a: "7이다. 숫자 합 7을 만드는 조합이 (1, 6), (2, 5), (3, 4), (4, 3), (5, 2), (6, 1)의 6가지로 가장 많아, 36가지 중 6가지이므로 확률이 1/6이다." },
+      { q: "숫자 합이 5인 경우와 2인 경우 중 엔트로피가 큰 쪽은? 그 까닭은?",
+        a: "숫자 합이 5인 경우이다. 엔트로피는 특정한 거시적 상태를 나타내는 미시적 상태의 수를 나타내는 척도인데, 숫자 합 5는 4가지, 숫자 합 2는 1가지 조합으로 만들어지기 때문이다." },
+      { q: "주사위 10,000개를 던질 때 숫자 합이 10,000 또는 60,000이 될 수 있을까?",
+        a: "불가능하지는 않지만 확률이 0에 가깝다. 거시적 현상에서는 엔트로피가 작은 쪽보다 큰 쪽으로 나타날 확률이 크다." }
+    ],
+    log: { cols: ["주사위 개수", "굴린 횟수", "나온 숫자 합의 범위", "가능한 범위"], rows: [] },
+    commit: function () {
+      if (this.rolls > 0) { var n = this.N(); this.log.rows.push([comma(n) + "개", comma(this.rolls), comma(this.min) + " ~ " + comma(this.max), comma(n) + " ~ " + comma(6 * n)]); renderLog(); }
+    }
+  };
+
+  /* ---------- 4. 열의 이동: 입자 사이를 에너지 덩어리가 무작위로 옮겨 다닌다 ---------- */
+  var HEAT_N = 100, HEAT_Q = 400;
+  var LF = [0]; for (var lf = 1; lf <= HEAT_Q + HEAT_N + 2; lf++) LF[lf] = LF[lf - 1] + Math.log(lf);
+  function lnOmega(q) { return LF[q + HEAT_N - 1] - LF[q] - LF[HEAT_N - 1]; }
+  function heatS(qA) { return lnOmega(qA) + lnOmega(HEAT_Q - qA); }
+  var HEAT_SMAX = heatS(HEAT_Q / 2), HEAT_SMIN = heatS(HEAT_Q);
+  function heatRel(qA) { return (heatS(qA) - HEAT_SMIN) / (HEAT_SMAX - HEAT_SMIN); }
+  function heatInit(dPct) {
+    var qA = Math.round(HEAT_Q * (0.5 + dPct / 200)), e = new Uint16Array(HEAT_N * 2), i;
+    for (i = 0; i < qA; i++) e[rnd(HEAT_N)]++;
+    for (i = qA; i < HEAT_Q; i++) e[HEAT_N + rnd(HEAT_N)]++;
+    return { e: e, qA: qA };
+  }
+  function heatStep(st, k) {
+    for (var i = 0; i < k; i++) {
+      var s = rnd(HEAT_N * 2), d = rnd(HEAT_N * 2);
+      if (st.e[s] > 0) { st.e[s]--; st.e[d]++; if (s < HEAT_N && d >= HEAT_N) st.qA--; else if (s >= HEAT_N && d < HEAT_N) st.qA++; }
+    }
+  }
+  var HEAT_DS = [0, 20, 40, 60, 80, 100];
+  var heat = {
+    id: "heat", tab: "열의 이동", cond: "물체 A와 B가 맞닿아 있습니다. 입자가 충돌할 때마다 에너지 덩어리가 무작위로 옮겨 갑니다.",
+    gTitle: "온도와 엔트로피", gNote: "입자당 평균 에너지를 온도로 나타냄",
+    ctrl: { label: "처음 온도 차", ends: ["온도가 같음", "A에 에너지가 모두 있음"], max: HEAT_DS.length - 1 },
+    idx: 3, run: false, speed: 10,
+    D: function () { return HEAT_DS[this.idx]; },
+    valText: function () { return this.D() + " %"; },
+    fresh: function () {
+      var st = heatInit(this.D()); this.st = st; this.q0 = st.qA; this.steps = 0; this.hist = [[0, st.qA, heatRel(st.qA)]]; this.acc = 0; this.flow = 0; this.backCount = 0; this.settled = false; this.maxAfter = 0; this.run = false; this.speed = 10; this.snap = st.qA; this.snapT = 0;
+    },
+    init: function () { this.fresh(); },
+    setCtrl: function (i) { this.commit(); this.idx = i; this.fresh(); },
+    reset: function () { this.commit(); this.fresh(); },
+    buttons: function () {
+      var self = this;
+      return [
+        { label: this.run ? "멈춤" : "시작", primary: true, fn: function () { self.run = !self.run; self.speed = 10; } },
+        { label: "오래 기다리기 (100배 빠르게)", fn: function () { self.run = true; self.speed = 1000; } },
+        { label: "처음 상태로", fn: function () { self.reset(); } }
+      ];
+    },
+    tick: function (dt) {
+      if (!this.run) return;
+      var k = Math.max(1, Math.round(this.speed * dt * 60));
+      heatStep(this.st, k); this.steps += k;
+      var q = this.st.qA, d0 = Math.abs(2 * this.q0 - HEAT_Q), dn = Math.abs(2 * q - HEAT_Q);
+      if (this.hist.length > 1600) this.hist = this.hist.filter(function (p, i) { return i % 2 === 0; });
+      this.hist.push([this.steps, q, heatRel(q)]);
+      if (!this.settled && dn <= Math.max(d0 * 0.1, 8)) this.settled = true;
+      if (this.settled) {
+        if (dn > this.maxAfter) this.maxAfter = dn;
+        if (d0 > 0 && dn >= d0 && !this.wasBack) { this.backCount++; this.wasBack = true; }
+        if (dn < d0 / 2) this.wasBack = false;
+      }
+      this.snapT += dt;
+      if (this.snapT > 1) { this.flow = this.snap - q; this.snap = q; this.snapT = 0; }
+    },
+    status: function () {
+      if (!this.run && this.steps === 0) return this.D() === 0 ? "두 물체의 온도가 같습니다." : "A의 온도가 B보다 높습니다.";
+      if (this.settled) return "열적 평형: 두 물체의 온도가 거의 같습니다.";
+      return "열이 고온의 A에서 저온의 B로 이동합니다.";
+    },
+    tiles: function () {
+      var q = this.st.qA, ta = q / HEAT_N, tb = (HEAT_Q - q) / HEAT_N, rel = heatRel(q) * 100;
+      return [
+        { name: "물체 A의 온도", val: ta.toFixed(1), bar: ta / 8 * 100, mean: "이동한 열 " + (this.q0 - q) + " 덩어리", c: "--heat" },
+        { name: "물체 B의 온도", val: tb.toFixed(1), bar: tb / 8 * 100, c: "--accent" },
+        { name: "엔트로피", val: rel >= 97 ? "거의 최대" : heatRel(this.q0) >= rel ? "처음과 비슷" : "증가하는 중", bar: rel, mean: "높이는 상대적인 값", c: "--entropy" },
+        { name: "처음 온도 차로 돌아간 횟수", val: this.D() === 0 ? "—" : this.backCount + "번", mean: this.settled ? "평형 뒤 가장 큰 온도 차 " + (this.maxAfter / HEAT_Q * 100).toFixed(0) + " %" : "평형 뒤에 세어 봅니다", c: "--work" }
+      ];
+    },
+    msg: function () {
+      if (this.steps === 0) return "처음 온도 차를 정하고 「시작」을 눌러 보세요.";
+      if (!this.settled) return "입자 사이의 충돌 하나하나는 어느 쪽으로든 일어나지만, 평균적으로 에너지는 고온에서 저온으로 이동합니다.";
+      return "「오래 기다리기」를 눌러 저온에서 고온으로 저절로 이동해 처음 온도 차로 돌아가는지 확인해 보세요. 작은 흔들림은 입자 수가 적은 모형이기 때문입니다.";
+    },
+    scene: function (f) {
+      var c = f.c, w = f.w, h = f.h, gapMid = 58, top = 24, sideMax = h - top - 6;
+      var side = Math.min(sideMax, (w - gapMid - 16) / 2), cell = side / 10, xA = w / 2 - gapMid / 2 - side, xB = w / 2 + gapMid / 2, st = this.st;
+      [[xA, 0, "물체 A", col.heat], [xB, HEAT_N, "물체 B", col.accent]].forEach(function (v) {
+        for (var i = 0; i < HEAT_N; i++) {
+          var e = st.e[v[1] + i], a = Math.min(1, e / 8), x = v[0] + (i % 10) * cell, y = top + Math.floor(i / 10) * cell;
+          c.fillStyle = col.bg; c.fillRect(x, y, cell, cell);
+          if (e > 0) { c.globalAlpha = 0.15 + 0.85 * a; c.fillStyle = col.heat; c.fillRect(x, y, cell, cell); c.globalAlpha = 1; }
+        }
+        c.strokeStyle = col.ink; c.lineWidth = 2; c.strokeRect(v[0], top, side, side);
+        text(c, v[2], v[0] + side / 2, 16, { a: "center", c: v[3], w: 700 });
+      });
+      var mid = top + side / 2, q = st.qA;
+      if (this.run && !this.settled && this.flow !== 0) {
+        if (q > HEAT_Q / 2) arrow(c, w / 2 - 22, mid, w / 2 + 22, mid, col.heat);
+        else arrow(c, w / 2 + 22, mid, w / 2 - 22, mid, col.heat);
+        text(c, "열", w / 2, mid - 12, { a: "center", c: col.heat });
+      } else if (this.settled) {
+        text(c, "평형", w / 2, mid + 5, { a: "center", c: col.muted });
+      }
+    },
+    graph: function (f) {
+      var c = f.c, w = f.w, h = f.h, b = axes(c, w, h, "시간", ""), H = this.hist, tm = Math.max(H[H.length - 1][0], 6000);
+      var mid = b.t + (b.b - b.t) * 0.62;
+      function X(t) { return b.l + t / tm * (b.r - b.l - 54); }
+      function YT(q) { return mid - 8 - q / HEAT_N / 8 * (mid - 8 - b.t); }
+      function YS(s) { return b.b - s * (b.b - mid - 12); }
+      text(c, "온도", b.l + 6, 16);
+      text(c, "엔트로피", b.l + 6, mid + 10, { c: col.entropy });
+      dashed(c, b.l, mid, b.r, mid, col.line);
+      var a = H.map(function (p) { return [X(p[0]), YT(p[1])]; });
+      var bb = H.map(function (p) { return [X(p[0]), YT(HEAT_Q - p[1])]; });
+      var s = H.map(function (p) { return [X(p[0]), YS(p[2])]; });
+      line(c, a, col.heat, 2.5); line(c, bb, col.accent, 2.5); line(c, s, col.entropy, 2.5);
+      var ea = a[a.length - 1], eb = bb[bb.length - 1], es = s[s.length - 1];
+      var ya = ea[1], yb = eb[1];
+      if (Math.abs(ya - yb) < 18) { var m = (ya + yb) / 2; if (ya <= yb) { ya = m - 9; yb = m + 9; } else { ya = m + 9; yb = m - 9; } }
+      text(c, "A", ea[0] + 6, ya + 5, { c: col.heat, w: 700 });
+      text(c, "B", eb[0] + 6, yb + 5, { c: col.accent, w: 700 });
+      void es;
+    },
+    pred: {
+      q: "두 물체를 오래 맞닿게 두면 온도는 어떻게 될까요?",
+      opts: ["온도 차가 커진다", "온도가 같아진다", "그대로이다"], ans: 1,
+      ready: function () { return heat.settled && heat.D() > 0; },
+      wait: "처음 온도 차를 준 상태에서 「시작」을 눌러 평형까지 지켜보세요.",
+      ok: "온도가 같아지는 상태의 경우의 수가 가장 많습니다.",
+      no: "실제로는 온도가 같아집니다. 온도가 같은 상태의 경우의 수가 가장 많기 때문입니다."
+    },
+    asks: [
+      { q: "두 물체의 온도 차이가 큰 상태와 온도가 서로 같은 상태(열적 평형 상태) 중 엔트로피가 큰 쪽은?",
+        a: "온도가 서로 같은 상태이다. 온도 차이가 큰 상태는 엔트로피가 작고, 열적 평형 상태는 엔트로피가 크다." },
+      { q: "차가운 물체에서 뜨거운 물체로 열이 이동해도 에너지 보존 법칙에는 어긋나지 않는다. 그런데 왜 이런 일은 일어나지 않을까?",
+        a: "그런 변화는 엔트로피가 감소하는 변화이기 때문이다. 어떤 상태의 엔트로피가 높다는 것은 그 거시 상태로 존재할 확률이 크다는 뜻이므로, 변화는 엔트로피가 증가하는 방향으로 일어난다. 이 방향성을 설명하는 법칙이 열역학 제2법칙이다." },
+      { q: "물에 잉크를 떨어뜨렸을 때 잉크가 퍼지는 현상을 열역학 제2법칙으로 설명해 보자.",
+        a: "잉크가 고르게 퍼진 상태는 한곳에 모인 상태보다 미시적 상태의 수가 훨씬 많아 엔트로피가 크다. 시간이 지남에 따라 엔트로피가 증가하는 방향으로 변화가 일어나므로 잉크는 퍼지고, 저절로 다시 모이지 않는다." }
+    ],
+    log: { cols: ["처음 온도 차", "A의 온도", "B의 온도", "처음 온도 차로 돌아간 횟수"], rows: [] },
+    commit: function () {
+      if (this.steps > 0) { var q = this.st.qA; this.log.rows.push([this.D() + " %", (q / HEAT_N).toFixed(1), ((HEAT_Q - q) / HEAT_N).toFixed(1), this.D() === 0 ? "—" : this.backCount + "번"]); renderLog(); }
+    }
+  };
+
+  var CASES = { ink: ink, balls: balls, dice: dice, heat: heat };
+
+  /* ---------- 한눈에 정리 ---------- */
+  var SUM = {
+    ink: { name: "잉크", micro: "입자 하나의 운동은 거꾸로 돌려도 자연스럽다.", macro: "전체는 퍼지기만 하고 저절로 모이지 않는다.", big: "고르게 퍼진 상태", core: "많은 입자가 저절로 한곳에 모이는 영상은 거꾸로 재생임을 금방 알 수 있다." },
+    balls: { name: "공 옮기기", micro: "공 한 개를 옮기는 과정은 가역적이다.", macro: "공의 전체적인 분포가 변해가는 과정은 비가역적이다.", big: "두 바구니의 공 수가 비슷한 상태", core: "미시적인 가역 과정이 모여 거시적인 비가역 과정을 만든다." },
+    dice: { name: "주사위", micro: "상자 속 숫자 조합은 미시적 배열이다.", macro: "표시 장치의 숫자 합은 거시적 현상이다.", big: "경우의 수가 많은 숫자 합", core: "엔트로피는 특정한 거시적 상태를 나타내는 미시적 상태의 수를 나타내는 척도이다." },
+    heat: { name: "열의 이동", micro: "입자 사이의 충돌은 가역적인 에너지 전달이다.", macro: "평균적으로 열은 고온에서 저온으로만 이동한다.", big: "온도가 같은 열적 평형 상태", core: "온도가 서로 다른 두 물체가 상호작용할 때 열은 온도가 높은 물체에서 낮은 물체로만 이동한다." }
+  };
+  /* 세 탐구의 치우침(처음 상태 = 1, 고르게 섞임 = 0)을 실제 모형으로 계산 */
+  function sumCurves() {
+    var out = {}, i, n = 60;
+    var a = inkSet(1000), m0 = inkSpread(a, 0), inkPts = [];
+    for (i = 0; i <= n; i++) { var sp1 = inkSpread(a, 3.6 * i / n); inkPts.push(Math.max(0, 1 - (sp1 - m0) / (1 - m0))); }
+    out.ink = inkPts;
+    var N = 1000, side = new Uint8Array(N), nL = N, ballPts = [];
+    for (i = 0; i <= n; i++) {
+      ballPts.push(Math.abs(2 * nL - N) / N);
+      for (var k = 0; k < 50; k++) { var b = rnd(N); if (side[b]) { side[b] = 0; nL++; } else { side[b] = 1; nL--; } }
+    }
+    out.balls = ballPts;
+    var st = heatInit(100), hp = [];
+    for (i = 0; i <= n; i++) { hp.push(Math.abs(2 * st.qA - HEAT_Q) / HEAT_Q); heatStep(st, 500); }
+    out.heat = hp;
+    return out;
+  }
+  function renderSummary() {
+    function el(t, cl, tx) { var e = document.createElement(t); if (cl) e.className = cl; if (tx !== undefined) e.textContent = tx; return e; }
+    var rows = $("sum-rows"), cards = $("sum-cards"); rows.textContent = ""; cards.textContent = "";
+    ORDER.forEach(function (id) {
+      var s = SUM[id], tr = el("tr"); tr.setAttribute("data-id", id); tr.tabIndex = 0;
+      tr.appendChild(el("td", "", s.name)); tr.appendChild(el("td", "", s.micro)); tr.appendChild(el("td", "", s.macro)); tr.appendChild(el("td", "", s.big));
+      rows.appendChild(tr);
+      var cd = el("section", "panel sum-card"); cd.appendChild(el("h2", "", s.name)); cd.appendChild(el("p", "", s.core));
+      var b = el("button", "btn", s.name + " 탐구하기"); b.type = "button"; b.addEventListener("click", function () { go(id); });
+      cd.appendChild(b); cards.appendChild(cd);
+    });
+    var cv = sumCurves(), L = 56, R = 400, T = 28, B = 196;
+    function X(i) { return L + i / 60 * (R - L); }
+    function Y(v) { return B - Math.min(1, v) * (B - T); }
+    var colr = { ink: "var(--accent)", balls: "var(--mark)", heat: "var(--heat)" };
+    var labelAt = { ink: 22, balls: 8, heat: 36 };
+    var svg = '<svg viewBox="0 0 440 400" role="img" aria-label="시간에 따라 치우침이 줄어드는 그래프와 주사위 숫자 합의 경우의 수 막대그래프">' +
+      '<path d="M' + L + ' ' + (T - 8) + 'V' + B + 'H' + (R + 16) + '" fill="none" stroke="var(--ink)" stroke-width="2"/>' +
+      '<g font-size="14" fill="var(--muted)"><text x="10" y="' + (T + 6) + '">처음</text><text x="10" y="' + (B + 2) + '">고르게</text><text x="' + (R + 16) + '" y="' + (B + 20) + '" text-anchor="end">시간</text></g>';
+    ["ink", "balls", "heat"].forEach(function (id) {
+      var d = cv[id].map(function (v, i) { return (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1); }).join("");
+      var li = labelAt[id];
+      svg += '<g data-id="' + id + '" tabindex="0" role="button" aria-label="' + SUM[id].name + ' 강조"><path d="' + d + '" fill="none" stroke="transparent" stroke-width="20"/><path d="' + d + '" fill="none" stroke="' + colr[id] + '" stroke-width="3" stroke-linejoin="round"/>' +
+        '<text x="' + (X(li) + 8) + '" y="' + (Y(cv[id][li]) - 8) + '" font-size="15" font-weight="700" fill="' + colr[id] + '">' + SUM[id].name + '</text></g>';
+    });
+    var w2 = waysTable(2), bx = 96, bw = 24, by = 360, bh = 110;
+    svg += '<g data-id="dice" tabindex="0" role="button" aria-label="주사위 강조"><text x="' + L + '" y="238" font-size="15" font-weight="700" fill="var(--ink)">주사위 2개: 숫자 합의 경우의 수</text>';
+    for (var s = 2; s <= 12; s++) {
+      var hh = w2[s] / 6 * bh, xb = bx + (s - 2) * bw;
+      svg += '<rect x="' + xb + '" y="' + (by - hh) + '" width="' + (bw - 4) + '" height="' + hh + '" fill="' + (s === 7 ? "var(--entropy)" : "var(--accent)") + '"/>' +
+        '<text x="' + (xb + (bw - 4) / 2) + '" y="' + (by + 18) + '" text-anchor="middle" font-size="14" fill="var(--muted)">' + s + '</text>' +
+        '<text x="' + (xb + (bw - 4) / 2) + '" y="' + (by - hh - 5) + '" text-anchor="middle" font-size="14" fill="var(--ink)">' + w2[s] + '</text>';
+    }
+    svg += '</g></svg>';
+    $("sum-graph").innerHTML = svg;
+
+    var picked = null, top = document.querySelector(".sum-top"), marks = top.querySelectorAll("[data-id]");
+    function pick(id) {
+      picked = picked === id ? null : id;
+      top.classList.toggle("has-pick", picked !== null);
+      Array.prototype.forEach.call(marks, function (m) { m.classList.toggle("on", m.getAttribute("data-id") === picked); });
+    }
+    Array.prototype.forEach.call(marks, function (m) {
+      m.addEventListener("click", function () { pick(m.getAttribute("data-id")); });
+      m.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(m.getAttribute("data-id")); } });
+    });
+  }
+
+  /* ---------- 화면 묶기 ---------- */
+  function renderCases() {
+    var box = $("cases"); box.textContent = "";
+    ORDER.concat("sum").forEach(function (id) {
+      var b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "tab"); b.id = "case-" + id;
+      b.setAttribute("aria-selected", String(view === id));
+      b.textContent = id === "sum" ? "한눈에 정리" : CASES[id].tab;
+      b.addEventListener("click", function () { go(id); });
+      box.appendChild(b);
+    });
+  }
+  function renderTiles() {
+    var box = $("tiles"); box.textContent = "";
+    cs.tiles().forEach(function (t) {
+      var d = document.createElement("div"); d.className = "tile"; if (t.c) d.style.setProperty("--c", "var(" + t.c + ")");
+      var hasBar = t.bar !== undefined;
+      d.innerHTML = '<span class="name"></span><span class="val"></span>' + (hasBar ? '<div class="meter"><div></div></div>' : "") + '<span class="mean"></span>';
+      box.appendChild(d);
+    });
+  }
+  function updateTiles() {
+    var els = $("tiles").children;
+    cs.tiles().forEach(function (t, i) {
+      var d = els[i]; if (!d) return;
+      setText(d.querySelector(".name"), t.name); setText(d.querySelector(".val"), t.val); setText(d.querySelector(".mean"), t.mean || "");
+      var m = d.querySelector(".meter div"); if (m) m.style.width = Math.max(0, Math.min(100, t.bar)) + "%";
+    });
+  }
+  var btnEls = [];
+  function renderBtns() {
+    var box = $("btns"); box.textContent = ""; btnEls = [];
+    cs.buttons().forEach(function (b, i) {
+      var e = document.createElement("button"); e.type = "button"; e.className = "btn" + (b.primary ? " primary" : "");
+      e.addEventListener("click", function () { cs.buttons()[i].fn(); tickUI(); });
+      box.appendChild(e); btnEls.push(e);
+    });
+  }
+  function renderLog() {
+    if (!cs) return;
+    var L = cs.log, h = $("log-head"), b = $("log-body"); h.textContent = ""; b.textContent = "";
+    var tr = document.createElement("tr");
+    L.cols.forEach(function (c) { var th = document.createElement("th"); th.textContent = c; tr.appendChild(th); }); h.appendChild(tr);
+    if (!L.rows.length) {
+      var r = document.createElement("tr"), td = document.createElement("td"); td.colSpan = L.cols.length; td.textContent = "아직 기록이 없습니다."; td.style.textAlign = "left"; td.style.color = "var(--muted)";
+      r.appendChild(td); b.appendChild(r);
+    }
+    L.rows.forEach(function (row) { var r = document.createElement("tr"); row.forEach(function (c) { var td = document.createElement("td"); td.textContent = c; r.appendChild(td); }); b.appendChild(r); });
+    $("tab-log").textContent = L.rows.length ? "기록 (" + L.rows.length + ")" : "기록";
+  }
+  function renderAsks() {
+    var ol = $("asks"); ol.textContent = "";
+    cs.asks.forEach(function (t) {
+      var li = document.createElement("li"), q = document.createElement("div"), d = document.createElement("details"), sm = document.createElement("summary"), a = document.createElement("p");
+      q.textContent = t.q; sm.textContent = "정답 보기"; a.textContent = t.a; d.className = "answer";
+      d.appendChild(sm); d.appendChild(a); li.appendChild(q); li.appendChild(d); ol.appendChild(li);
+    });
+  }
+  function renderPred() {
+    var p = cs.pred, box = $("pred-opts"); $("pred-q").textContent = p.q; box.textContent = "";
+    p.opts.forEach(function (o, i) {
+      var b = document.createElement("button"); b.type = "button"; b.textContent = o; b.setAttribute("aria-pressed", String(p.pick === i));
+      b.addEventListener("click", function () { p.pick = i; renderPred(); updatePred(); });
+      box.appendChild(b);
+    });
+  }
+  function updatePred() {
+    var p = cs.pred, m;
+    if (p.pick === undefined) m = "먼저 예상을 골라 주세요.";
+    else if (!p.ready()) m = p.wait;
+    else m = p.pick === p.ans ? "예상과 같습니다. " + p.ok : "예상과 다릅니다. " + p.no;
+    setText($("pred-msg"), m);
+  }
+  function tickUI() {
+    if (!cs) return;
+    var bs = cs.buttons();
+    bs.forEach(function (b, i) { setText(btnEls[i], b.label); btnEls[i].disabled = !!b.off; });
+    setText($("status"), cs.status());
+    setText($("ctrl-val"), cs.valText());
+    setText($("msg"), cs.msg());
+    updateTiles(); updatePred();
+  }
+  function setupCtrl() {
+    var k = cs.ctrl, s = $("ctrl");
+    s.min = 0; s.max = k.max; s.value = cs.idx;
+    $("ctrl-label").textContent = k.label; $("end-lo").textContent = k.ends[0]; $("end-hi").textContent = k.ends[1];
+  }
+  function go(id) {
+    if (cs && cs.commit && view !== id) { cs.commit(); if (cs.auto !== undefined) cs.auto = false; if (cs.run !== undefined) cs.run = false; }
+    view = id;
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* 파일로 열 때 */ }
+    $("lab").hidden = id === "sum"; $("summary").hidden = id !== "sum";
+    renderCases();
+    if (id === "sum") { cs = null; return; }
+    cs = CASES[id];
+    $("cond").textContent = cs.cond; $("g-title").textContent = cs.gTitle; $("g-note").textContent = cs.gNote;
+    setupCtrl(); renderBtns(); renderTiles(); renderLog(); renderAsks(); renderPred(); tickUI();
+    window.scrollTo(0, 0);
+  }
+
+  $("ctrl").addEventListener("input", function () { cs.setCtrl(parseInt(this.value, 10)); renderBtns(); renderTiles(); tickUI(); });
+  $("log-now").addEventListener("click", function () { if (cs.commit) cs.commit(); });
+  $("graph").addEventListener("pointerdown", function (e) { if (cs && cs.press) { cs.press(e); tickUI(); } });
+  Array.prototype.forEach.call($("acts").children, function (b) {
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call($("acts").children, function (o) {
+        o.setAttribute("aria-selected", String(o === b));
+        $("act-" + o.getAttribute("data-act")).hidden = o !== b;
+      });
+    });
+  });
+
+  colors();
+  ORDER.forEach(function (id) { CASES[id].init(); });
+  renderSummary();
+  go(view);
+
+  var last = 0, uiT = 0;
+  function frame(ms) {
+    var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms;
+    if (cs) {
+      cs.tick(dt);
+      cs.scene(fit($("scene")));
+      cs.graph(fit($("graph")));
+      uiT += dt;
+      if (uiT > 0.12) { uiT = 0; tickUI(); }
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
