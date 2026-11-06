@@ -390,8 +390,10 @@
     } else {
       var up = verts(view)[(k + 1) % 4].V > verts(view)[k].V, ax = right ? x0 + cw + 24 : x0 - 24;
       if (up) arrow(c, ax, gt + 6, ax, gt - 34, col.work); else arrow(c, ax, gt - 34, ax, gt + 6, col.work);
-      c.fillStyle = col.work;
-      c.fillText(up ? "기체가 일을 함" : "기체가 일을 받음", right ? ax + 14 : ax - 14, gt - 14);
+      /* 일 글자는 화살표 위에 두어 아래쪽 열 글자와 겹치지 않게 한다 */
+      c.fillStyle = col.work; c.textAlign = "center";
+      c.fillText(up ? "기체가 일을 함" : "기체가 일을 받음", Math.max(60, Math.min(w - 60, ax)), Math.max(top + 10, gt - 50));
+      c.textAlign = right ? "left" : "right";
     }
     if (e.Q !== 0) {
       var y1 = bot - 4, y2 = bot - Math.min(40, gh * 0.8);
