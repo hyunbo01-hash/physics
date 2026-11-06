@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="카르노 기관과 스털링 기관이 작동하는 모습과 순환 과정을 압력-부피 그래프로 함께 보며 열효율을 탐구하는 시뮬레이션">
+<title>열기관 탐구</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/sim.css?v=6">
+<style>
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+.cond { margin: 0; color: var(--muted); font-size: 0.9375rem; }
+.stage-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.25rem 1rem; }
+.status { font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; }
+.state { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0; font-size: 0.875rem; color: var(--muted); }
+.state b { font-weight: 600; font-size: 1rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+#scene { aspect-ratio: 16 / 10; }
+.graph-box { position: relative; aspect-ratio: 4 / 3; }
+.graph-box canvas { position: absolute; inset: 0; height: 100%; }
+.slider-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.slider-head label { font-weight: 600; }
+.temps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+@media (max-width: 34rem) { .temps { grid-template-columns: minmax(0, 1fr); } }
+.legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.875rem; font-size: 0.8125rem; color: var(--muted); }
+.legend i { display: inline-block; width: 1.25rem; height: 0.25rem; border-radius: 2px; vertical-align: middle; margin-right: 0.25rem; }
+
+/* 과정 표 */
+.proc tbody tr { cursor: pointer; }
+.proc tbody tr:hover td { background: var(--bg); }
+.proc tr.now td { background: var(--accent-soft); font-weight: 600; }
+.proc .hq { color: var(--heat); } .proc .hw { color: var(--work); } .proc .hu { color: var(--inner); }
+
+/* 핵심 관계: 에너지 흐름 그림 + 카드 */
+.core { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 1rem; align-items: center; }
+@media (max-width: 44rem) { .core { grid-template-columns: minmax(0, 1fr); } #flow { max-width: 15rem; margin-inline: auto; } }
+#flow svg { display: block; width: 100%; height: auto; }
+.law { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 0.5rem; align-items: stretch; }
+.law + .law { margin-top: 0.5rem; }
+.op { align-self: center; font-size: 1.5rem; color: var(--muted); }
+.tile { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0.875rem; border-radius: 10px; border: 1px solid var(--line); border-top: 4px solid var(--c); min-width: 0; }
+.tile.q1 { --c: var(--heat); } .tile.q2 { --c: var(--cold); } .tile.w { --c: var(--work); } .tile.e { --c: var(--accent); grid-column: 1 / -1; }
+.tile .name { font-size: 0.875rem; font-weight: 600; color: var(--c); }
+.tile .val { font-weight: 700; font-size: clamp(1.375rem, 3.2vw, 1.875rem); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tile .mean { font-size: 0.875rem; color: var(--muted); }
+@media (max-width: 34rem) { .law { grid-template-columns: minmax(0, 1fr); } .op { display: none; } }
+
+/* 탐구 전 활동 */
+.predict { display: flex; flex-direction: column; gap: 0.625rem; }
+.signs { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.signs button { font: inherit; font-size: 0.9375rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.375rem 0.75rem; cursor: pointer; }
+.signs button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.msg { margin: 0; padding: 0.4375rem 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.9375rem; }
+.asks { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; max-width: 46rem; }
+.answer { margin-top: 0.375rem; }
+.answer summary { display: inline-block; cursor: pointer; list-style: none; font-size: 0.875rem; font-weight: 600; color: var(--accent); border: 1px solid var(--line); border-radius: 8px; padding: 0.25rem 0.75rem; }
+.answer summary::-webkit-details-marker { display: none; }
+.answer summary::after { content: " ▾"; }
+.answer[open] summary { background: var(--accent-soft); border-color: var(--accent); }
+.answer[open] summary::after { content: " ▴"; }
+.answer p { margin: 0.5rem 0 0; padding: 0.625rem 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.9375rem; }
+
+/* 한눈에 정리 */
+.law-banner { margin: 0; padding: 0.75rem 1rem; background: var(--accent-soft); border-radius: 10px; font-weight: 700; font-size: 1.0625rem; }
+.sum-top { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 1rem; }
+@media (max-width: 56rem) { .sum-top { grid-template-columns: minmax(0, 1fr); } }
+.sum-graph svg { display: block; width: 100%; height: auto; }
+.sum-table th, .sum-table td { text-align: left; white-space: normal; vertical-align: top; }
+.sum-table td:first-child { font-weight: 600; white-space: nowrap; }
+.sum-top [data-id] { cursor: pointer; transition: opacity 0.15s; }
+.sum-top.has-pick [data-id]:not(.on) { opacity: 0.22; }
+.sum-top.has-pick tr.on { background: var(--accent-soft); }
+@media (prefers-reduced-motion: reduce) { .sum-top [data-id] { transition: none; } }
+.sum-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+.sum-card p, .sum-card ol { margin: 0; }
+.sum-card ol { padding-left: 1.25rem; color: var(--muted); font-size: 0.9375rem; }
+.sum-card .btn { align-self: flex-start; margin-top: auto; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="sim-head">
+    <a class="back" href="../index.html">← 물리 수업 자료실</a>
+    <span class="lesson-code">역학과 에너지 · II-2-01</span>
+    <h1>열기관 탐구</h1>
+  </header>
+
+  <div class="seg" id="cases" role="tablist" aria-label="열기관 고르기"></div>
+
+  <div class="stack" id="lab">
+    <section class="panel" aria-label="탐구 전 활동">
+      <div class="seg" id="acts" role="tablist" aria-label="탐구 전 활동">
+        <button type="button" role="tab" data-act="predict" aria-selected="true">예상하기</button>
+        <button type="button" role="tab" data-act="think" aria-selected="false">생각해 보기</button>
+      </div>
+      <div id="act-predict" class="predict">
+        <p class="note" id="pred-q"></p>
+        <div class="signs" id="pred-opts" role="group" aria-label="예상 고르기"></div>
+        <p class="msg" id="pred-msg" aria-live="polite"></p>
+      </div>
+      <div id="act-think" hidden><ol class="asks" id="asks"></ol></div>
+    </section>
+
+    <div class="cols">
+      <section class="panel" aria-label="열기관이 작동하는 모습">
+        <div class="stage-head">
+          <div class="status" id="status" aria-live="polite"></div>
+          <p class="state">
+            <span>압력 <b id="r-p"></b> ×10⁵ Pa</span>
+            <span>부피 <b id="r-v"></b> ×10⁻³ m³</span>
+            <span>온도 <b id="r-t"></b> K</span>
+          </p>
+        </div>
+        <p class="cond" id="cond"></p>
+        <canvas id="scene" role="img" aria-label="열원 위를 옮겨 다니며 팽창과 압축을 되풀이하는 실린더"></canvas>
+        <div>
+          <div class="slider-head"><label for="phase">순환 진행</label><span class="note" id="phase-val"></span></div>
+          <input id="phase" type="range" min="0" max="400" step="1" value="0">
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" type="button" id="btn-play">⏸ 멈춤</button>
+          <button class="btn" type="button" id="btn-step">다음 과정 ▶</button>
+          <button class="btn" type="button" id="btn-reset">처음으로</button>
+        </div>
+        <div class="temps">
+          <div>
+            <div class="slider-head"><label for="t1">고온 열원 T₁</label><span class="num" id="t1-val"></span></div>
+            <input id="t1" type="range" min="400" max="800" step="50" value="600">
+          </div>
+          <div>
+            <div class="slider-head"><label for="t2">저온 열원 T₂</label><span class="num" id="t2-val"></span></div>
+            <input id="t2" type="range" min="200" max="400" step="50" value="300">
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="압력-부피 그래프와 과정 표">
+        <div class="stage-head"><h2>압력–부피 그래프</h2><span class="note">색칠한 넓이 = 한 번 순환할 때 한 일 W</span></div>
+        <div class="graph-box"><canvas id="pv" role="img" aria-label="순환 과정의 압력-부피 그래프"></canvas></div>
+        <div class="legend">
+          <span><i style="background: var(--heat)"></i>열 흡수</span>
+          <span><i style="background: var(--cold)"></i>열 방출</span>
+          <span><i style="background: var(--muted)"></i>열 출입 없음</span>
+        </div>
+        <div class="table-wrap">
+          <table class="proc">
+            <thead><tr><th>과정</th><th>종류</th><th class="hq">Q (J)</th><th class="hw">W (J)</th><th class="hu">ΔU (J)</th></tr></thead>
+            <tbody id="proc-body"></tbody>
+            <tfoot id="proc-foot"></tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel" aria-label="한 번 순환할 때의 에너지와 열효율">
+      <div class="core">
+        <div id="flow"></div>
+        <div>
+          <div class="law">
+            <div class="tile q1"><span class="name">흡수한 열 Q₁</span><span class="val" id="v-q1"></span><span class="mean">고온 열원에서 들어온 열</span></div>
+            <span class="op" aria-hidden="true">−</span>
+            <div class="tile q2"><span class="name">방출한 열 Q₂</span><span class="val" id="v-q2"></span><span class="mean">저온 열원으로 나간 열</span></div>
+            <span class="op" aria-hidden="true">=</span>
+            <div class="tile w"><span class="name">기체가 한 일 W</span><span class="val" id="v-w"></span><span class="mean">한 번 순환할 때 ΔU = 0</span></div>
+          </div>
+          <div class="law">
+            <div class="tile e"><span class="name">열효율 e = W ÷ Q₁</span><span class="val" id="v-e"></span><span class="mean" id="v-e-note"></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="기록">
+      <h2 id="log-title">기록</h2>
+      <p class="note">한 번 순환이 끝날 때마다 결과가 쌓입니다(온도를 바꾼 경우에만). 두 기관과 여러 온도를 비교해 보세요.</p>
+      <div class="btn-row"><button class="btn" type="button" id="log-now">지금 결과 기록하기</button></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>기관</th><th>T₁ (K)</th><th>T₂ (K)</th><th>Q₁ (J)</th><th>Q₂ (J)</th><th>W (J)</th><th>열효율</th></tr></thead>
+          <tbody id="log-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="stack" id="summary" hidden>
+    <p class="law-banner">W = Q₁ − Q₂ &nbsp;·&nbsp; 열효율 e = W / Q₁ = 1 − Q₂ / Q₁ &nbsp;·&nbsp; 카르노 기관: e = 1 − T₂ / T₁ (가장 높은 효율)</p>
+    <div class="sum-top">
+      <section class="panel sum-graph" aria-label="두 기관의 순환 과정 그래프">
+        <h2>같은 두 열원 사이에서</h2>
+        <div id="sum-graph"></div>
+        <p class="note" id="sum-note"></p>
+      </section>
+      <section class="panel" aria-label="두 기관 비교 표">
+        <h2>한눈에 비교</h2>
+        <div class="table-wrap">
+          <table class="sum-table">
+            <thead><tr><th>기관</th><th>순환 과정</th><th>열 흡수</th><th>열 방출</th><th>Q₁</th><th>Q₂</th><th>W</th><th>열효율</th></tr></thead>
+            <tbody id="sum-rows"></tbody>
+          </table>
+        </div>
+        <p class="note">그래프의 선이나 표의 줄을 누르면 그 기관만 진하게 보입니다. 한 번 더 누르면 원래대로 돌아옵니다.</p>
+      </section>
+    </div>
+    <div class="sum-cards" id="sum-cards"></div>
+  </div>
+
+  <footer>단원자 분자 이상 기체(1 mol 의 약 1/8)로 계산합니다. 등온 과정의 부피비는 2배로 두 기관이 같습니다. 스털링 기관은 재생기(열을 저장했다 돌려주는 장치)가 없는 이상적인 순환으로 계산합니다.</footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var G = 5 / 3, VA = 1, RATIO = 2;
+  var FONT = "'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif";
+  var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* 열원 번호: 0 고온, 1 단열재, 2 저온 */
+  var ENG = {
+    carnot: {
+      name: "카르노 기관", kinds: ["iso", "adi", "iso", "adi"],
+      labels: ["등온 팽창", "단열 팽창", "등온 압축", "단열 압축"], station: [0, 1, 2, 1],
+      cond: "고온 열원 → 단열재 → 저온 열원 → 단열재 위를 차례로 옮겨 가며 네 과정을 되풀이한다.",
+      core: "가장 효율이 높은 이상적인 열기관. 열효율은 두 열원의 온도로만 정해진다: e = 1 − T₂/T₁",
+      pred: {
+        q: "고온 열원의 온도 T₁ 을 높이면 카르노 기관의 열효율은 어떻게 될까요?",
+        opts: ["높아진다", "낮아진다", "변하지 않는다"], ans: 0,
+        wait: "고온 열원 T₁ 슬라이더를 움직이며 아래 열효율을 살펴보세요.",
+        ok: "T₁ 이 높을수록 T₂/T₁ 이 작아져 e = 1 − T₂/T₁ 이 커집니다.",
+        no: "e = 1 − T₂/T₁ 에서 T₁ 이 커지면 T₂/T₁ 은 어떻게 될지 생각해 보세요."
+      },
+      asks: [
+        { q: "한 번 순환이 끝나면 기체의 내부 에너지 변화는 얼마일까? 그래서 W, Q₁, Q₂ 사이에는 어떤 관계가 있을까?",
+          a: "처음 상태로 돌아오므로 ΔU = 0 이다. 열역학 제1법칙에서 순환 전체에 대해 (흡수한 열 − 방출한 열) = 한 일 이므로 W = Q₁ − Q₂ 이다." },
+        { q: "열효율이 1 인 열기관을 만들 수 있을까?",
+          a: "e = 1 − T₂/T₁ 이 1 이 되려면 T₂ = 0 K 이거나 T₁ 이 무한대여야 하는데, 이는 현실적으로 불가능하다. 열의 일부는 반드시 저온 열원으로 방출되므로 열효율이 1 인 열기관은 없다." }
+      ]
+    },
+    stirling: {
+      name: "스털링 기관", kinds: ["iso", "isoV", "iso", "isoV"],
+      labels: ["등온 팽창", "등적 과정 (냉각)", "등온 압축", "등적 과정 (가열)"], station: [0, 2, 2, 0],
+      cond: "고온 열원과 저온 열원 사이를 오가며 등온 과정과 등적 과정(피스톤 고정)을 되풀이한다.",
+      core: "두 열원 사이의 온도 차로 작동하는 외연 기관. 같은 두 열원 사이에서 이상적인 스털링 기관의 효율은 카르노 기관보다 낮다.",
+      pred: {
+        q: "같은 두 열원 사이에서 작동할 때, 이상적인 스털링 기관의 열효율은 카르노 기관과 비교해 어떨까요?",
+        opts: ["카르노 기관보다 높다", "카르노 기관과 같다", "카르노 기관보다 낮다"], ans: 2,
+        wait: "스털링 기관이 한 번 순환할 때까지 지켜본 뒤, 아래 열효율을 카르노 기관과 비교해 보세요.",
+        ok: "한 일 W 는 카르노 기관과 같지만, 등적 가열 과정에서 열을 더 흡수해야 하므로 효율이 낮습니다.",
+        no: "아래 열효율 칸에 함께 적힌 카르노 기관의 효율과 비교해 보세요."
+      },
+      asks: [
+        { q: "b → c 와 d → a 는 어떤 과정이고, 열의 출입은 어떻게 될까?",
+          a: "둘 다 부피가 일정한 등적 과정이다. b → c 는 온도가 내려가므로 열을 방출하고, d → a 는 온도가 올라가므로 열을 흡수한다. 등적 과정에서는 기체가 일을 하지 않으므로 출입한 열은 모두 내부 에너지 변화가 된다." },
+        { q: "같은 두 열원 사이에서 이상적인 스털링 기관의 열효율이 카르노 기관보다 낮은 까닭은?",
+          a: "두 기관이 한 번 순환할 때 한 일 W 는 같지만, 스털링 기관은 d → a 등적 가열 과정에서 열을 더 흡수해야 해서 흡수한 열 Q₁ 이 더 크다. e = W / Q₁ 이므로 열효율이 더 낮다." }
+      ]
+    }
+  };
+  var ORDER = ["carnot", "stirling"];
+  var VERT = ["a", "b", "c", "d"];
+
+  var T1 = 600, T2 = 300, p = 0, playing = !still, view = "carnot", cycles = { carnot: 0, stirling: 0 };
+  var moved = { t1: false }, picks = {}, logRows = [];
+
+  /* ---------- 계산 (nR = 1 J/K, 부피 단위 ×10⁻³ m³) ---------- */
+  function verts(id) {
+    var k = Math.pow(T1 / T2, 1 / (G - 1));
+    if (id === "carnot") return [{ V: VA, T: T1 }, { V: VA * RATIO, T: T1 }, { V: VA * RATIO * k, T: T2 }, { V: VA * k, T: T2 }];
+    return [{ V: VA, T: T1 }, { V: VA * RATIO, T: T1 }, { V: VA * RATIO, T: T2 }, { V: VA, T: T2 }];
+  }
+  /* 압력 (×10⁵ Pa) = nRT / V */
+  function pres(s) { return s.T / (s.V * 100); }
+  function stateAt(id, ph) {
+    var v = verts(id), k = Math.floor(ph) % 4, f = ph - Math.floor(ph), s0 = v[k], s1 = v[(k + 1) % 4], kind = ENG[id].kinds[k], V, T;
+    if (kind === "isoV") { V = s0.V; T = s0.T + (s1.T - s0.T) * f; }
+    else {
+      V = s0.V * Math.pow(s1.V / s0.V, f);
+      T = kind === "iso" ? s0.T : s0.T * Math.pow(s0.V / V, G - 1);
+    }
+    return { V: V, T: T, P: T / (V * 100), k: k };
+  }
+  function r0(x) { var n = Math.round(x); return n === 0 ? 0 : n; }
+  /* 과정 k 전체의 에너지 (화면에 보이는 정수: Q 는 반올림한 ΔU 와 W 의 합) */
+  function procE(id, k) {
+    var v = verts(id), s0 = v[k], s1 = v[(k + 1) % 4], kind = ENG[id].kinds[k], W, dU;
+    if (kind === "iso") { W = s0.T * Math.log(s1.V / s0.V); dU = 0; }
+    else if (kind === "adi") { dU = 1.5 * (s1.T - s0.T); W = -dU; }
+    else { W = 0; dU = 1.5 * (s1.T - s0.T); }
+    var u = r0(dU), w = r0(W);
+    return { dU: u, W: w, Q: u + w };
+  }
+  function totals(id) {
+    var q1 = 0, q2 = 0;
+    for (var k = 0; k < 4; k++) { var e = procE(id, k); if (e.Q > 0) q1 += e.Q; else q2 -= e.Q; }
+    return { Q1: q1, Q2: q2, W: q1 - q2, e: (q1 - q2) / q1 };
+  }
+  function pct(e) { return (e * 100).toFixed(1) + " %"; }
+  function sg(n) { return n > 0 ? "+" + n : n < 0 ? "−" + Math.abs(n) : "0"; }
+  /* 축 눈금: 최댓값을 보기 좋은 수로 올림 */
+  function axis(max) {
+    var raw = max / 5, pw = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), m = raw / pw;
+    var step = (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * pw;
+    return { max: Math.ceil(max / step - 1e-9) * step, step: step };
+  }
+  /* 두 기관을 같은 축척으로 그리도록 카르노 기관(부피가 더 넓다)에 맞춘다 */
+  function scale() {
+    var v = verts("carnot");
+    return { V: axis(v[2].V * 1.08), P: axis(pres(v[0]) * 1.08) };
+  }
+
+  /* ---------- 화면 ---------- */
+  function setText(el, t) { if (el.textContent !== t) el.textContent = t; }
+  var col = {};
+  function colors() {
+    var cs = getComputedStyle(document.documentElement);
+    ["ink", "muted", "line", "accent", "surface", "heat", "work", "inner", "cold", "mark", "bg"].forEach(function (n) { col[n] = cs.getPropertyValue("--" + n).trim(); });
+  }
+  function fit(cv) {
+    var w = cv.clientWidth, h = cv.clientHeight, dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+    return { c: c, w: w, h: h };
+  }
+  function arrow(c, x1, y1, x2, y2, color, lw) {
+    var ang = Math.atan2(y2 - y1, x2 - x1), hd = 9 + (lw || 4);
+    c.strokeStyle = color; c.fillStyle = color; c.lineWidth = lw || 4; c.lineCap = "round";
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(ang) * hd * 0.7, y2 - Math.sin(ang) * hd * 0.7); c.stroke();
+    c.beginPath(); c.moveTo(x2, y2);
+    c.lineTo(x2 - hd * Math.cos(ang - 0.5), y2 - hd * Math.sin(ang - 0.5));
+    c.lineTo(x2 - hd * Math.cos(ang + 0.5), y2 - hd * Math.sin(ang + 0.5));
+    c.closePath(); c.fill();
+  }
+  function tempColor(T, a) {
+    var t = Math.max(0, Math.min(1, (T - 200) / 600));
+    return "rgba(" + Math.round(59 + 180 * t) + "," + Math.round(130 - 62 * t) + "," + Math.round(246 - 178 * t) + "," + a + ")";
+  }
+  /* 과정의 열 출입에 따른 선 색 */
+  function segColor(q) { return q > 0 ? col.heat : q < 0 ? col.cold : col.muted; }
+
+  var parts = [];
+  for (var i = 0; i < 36; i++) parts.push({ u: Math.random(), v: Math.random(), a: Math.random() * Math.PI * 2 });
+  var cylX = null;
+
+  function drawScene(dt) {
+    var f = fit($("scene")), c = f.c, w = f.w, h = f.h, eng = ENG[view], st = stateAt(view, p), k = st.k;
+    var e = procE(view, k), sc = scale();
+    var stH = 34, baseY = h - stH - 6, gap = 8, sw = (w - gap * 2) / 3;
+    function sx(i) { return i * (sw + gap); }
+    var names = [["고온 열원", "T₁ = " + T1 + " K"], ["단열재", "열 출입 없음"], ["저온 열원", "T₂ = " + T2 + " K"]];
+    var fills = [col.heat, col.line, col.cold];
+    c.font = "600 14px " + FONT; c.textAlign = "center"; c.textBaseline = "middle";
+    for (var s = 0; s < 3; s++) {
+      var used = eng.station.indexOf(s) >= 0, on = eng.station[k] === s;
+      c.globalAlpha = used ? (on ? 1 : 0.55) : 0.2;
+      c.fillStyle = fills[s]; c.fillRect(sx(s), baseY, sw, stH);
+      c.fillStyle = s === 1 ? col.ink : "#ffffff";
+      c.fillText(sw > 150 ? names[s][0] + "  " + names[s][1] : names[s][0], sx(s) + sw / 2, baseY + stH / 2);
+      c.globalAlpha = 1;
+    }
+
+    /* 실린더: 지금 과정의 열원 위로 옮겨 간다 */
+    var tx = sx(eng.station[k]) + sw / 2;
+    if (cylX === null || still) cylX = tx; else cylX += (tx - cylX) * Math.min(1, dt * 5);
+    var cw = Math.min(130, sw - 20), x0 = cylX - cw / 2, bot = baseY - 2, top = 10;
+    var hc = bot - top - 30, gh = Math.max(8, st.V / sc.V.max * hc), gt = bot - gh;
+    c.fillStyle = tempColor(st.T, 0.2); c.fillRect(x0, gt, cw, gh);
+    var sp = 90 * Math.sqrt(st.T / 300);
+    c.fillStyle = tempColor(st.T, 1);
+    parts.forEach(function (q) {
+      if (!still) {
+        q.u += Math.cos(q.a) * sp * dt / cw; q.v += Math.sin(q.a) * sp * dt / Math.max(20, gh);
+        if (q.u < 0) { q.u = -q.u; q.a = Math.PI - q.a; } if (q.u > 1) { q.u = 2 - q.u; q.a = Math.PI - q.a; }
+        if (q.v < 0) { q.v = -q.v; q.a = -q.a; } if (q.v > 1) { q.v = 2 - q.v; q.a = -q.a; }
+        q.u = Math.max(0, Math.min(1, q.u)); q.v = Math.max(0, Math.min(1, q.v));
+      }
+      c.beginPath(); c.arc(x0 + 6 + q.u * (cw - 12), gt + 5 + q.v * Math.max(1, gh - 10), 3.5, 0, Math.PI * 2); c.fill();
+    });
+    c.strokeStyle = col.ink; c.lineWidth = 3; c.lineJoin = "round";
+    c.beginPath(); c.moveTo(x0, top); c.lineTo(x0, bot); c.lineTo(x0 + cw, bot); c.lineTo(x0 + cw, top); c.stroke();
+    c.fillStyle = col.ink; c.fillRect(x0 + 2, gt - 14, cw - 4, 14);
+    c.fillStyle = col.muted; c.fillRect(cylX - 4, top, 8, Math.max(0, gt - 14 - top));
+
+    /* 설명 글자는 실린더 옆 빈 쪽에 */
+    var right = cylX < w / 2, lx = right ? x0 + cw + 14 : x0 - 14;
+    c.textAlign = right ? "left" : "right"; c.font = "600 14px " + FONT;
+    var kind = eng.kinds[k];
+    if (kind === "isoV") {
+      c.fillStyle = col.ink; c.fillRect(x0 - 6, gt - 18, 6, 22); c.fillRect(x0 + cw, gt - 18, 6, 22);
+      c.fillStyle = col.muted; c.fillText("피스톤 고정 (W = 0)", lx, gt - 8);
+    } else {
+      var up = verts(view)[(k + 1) % 4].V > verts(view)[k].V, ax = right ? x0 + cw + 24 : x0 - 24;
+      if (up) arrow(c, ax, gt + 6, ax, gt - 34, col.work); else arrow(c, ax, gt - 34, ax, gt + 6, col.work);
+      c.fillStyle = col.work;
+      c.fillText(up ? "기체가 일을 함" : "기체가 일을 받음", right ? ax + 14 : ax - 14, gt - 14);
+    }
+    if (e.Q !== 0) {
+      var y1 = bot - 4, y2 = bot - Math.min(40, gh * 0.8);
+      [-1, 0, 1].forEach(function (m) {
+        var x = cylX + m * cw / 4;
+        if (e.Q > 0) arrow(c, x, y1, x, y2, col.heat, 4); else arrow(c, x, y2, x, y1, col.cold, 4);
+      });
+      c.fillStyle = e.Q > 0 ? col.heat : col.cold;
+      c.fillText(e.Q > 0 ? "열 흡수" : "열 방출", lx, bot - 20);
+    } else {
+      c.fillStyle = col.muted; c.fillText("열 출입 없음", lx, bot - 20);
+    }
+  }
+
+  function drawPV() {
+    var f = fit($("pv")), c = f.c, w = f.w, h = f.h, sc = scale();
+    var ml = 46, mr = 16, mt = 28, mb = 42, gw = w - ml - mr, gh = h - mt - mb;
+    function X(v) { return ml + v / sc.V.max * gw; }
+    function Y(pp) { return mt + gh - pp / sc.P.max * gh; }
+    c.font = "13px " + FONT; c.lineWidth = 1; c.strokeStyle = col.line; c.fillStyle = col.muted;
+    c.textAlign = "right"; c.textBaseline = "middle";
+    for (var pp = 0; pp <= sc.P.max + 1e-9; pp += sc.P.step) { c.beginPath(); c.moveTo(ml, Y(pp)); c.lineTo(ml + gw, Y(pp)); c.stroke(); c.fillText(+pp.toFixed(2), ml - 8, Y(pp)); }
+    c.textAlign = "center"; c.textBaseline = "top";
+    for (var v = 0; v <= sc.V.max + 1e-9; v += sc.V.step) { c.beginPath(); c.moveTo(X(v), mt); c.lineTo(X(v), mt + gh); c.stroke(); c.fillText(+v.toFixed(2), X(v), mt + gh + 8); }
+    c.strokeStyle = col.ink; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(ml, mt); c.lineTo(ml, mt + gh); c.lineTo(ml + gw, mt + gh); c.stroke();
+    c.fillStyle = col.muted; c.textAlign = "left"; c.textBaseline = "alphabetic";
+    c.fillText("압력 (×10⁵ Pa)", 4, 16);
+    c.textAlign = "right"; c.fillText("부피 (×10⁻³ m³)", ml + gw, h - 6);
+
+    var segs = [], all = [];
+    for (var k = 0; k < 4; k++) {
+      var pts = [];
+      for (var i = 0; i <= 40; i++) { var s = stateAt(view, k + i / 40 * 0.99999); pts.push([X(s.V), Y(s.P)]); }
+      segs.push(pts); all = all.concat(pts);
+    }
+    c.beginPath(); all.forEach(function (q, i) { if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.closePath();
+    c.save(); c.globalAlpha = 0.16; c.fillStyle = col.work; c.fill(); c.restore();
+    var now = stateAt(view, p);
+    segs.forEach(function (pts, k) {
+      var q = procE(view, k).Q;
+      c.strokeStyle = segColor(q); c.lineWidth = k === now.k ? 6 : 3; c.lineJoin = "round"; c.lineCap = "round";
+      c.beginPath(); pts.forEach(function (pt, i) { if (i) c.lineTo(pt[0], pt[1]); else c.moveTo(pt[0], pt[1]); }); c.stroke();
+      var m = pts[20], n = pts[22];
+      arrow(c, m[0], m[1], n[0] + (n[0] - m[0]) * 2, n[1] + (n[1] - m[1]) * 2, segColor(q), 2);
+    });
+    /* 꼭짓점 이름 */
+    var v4 = verts(view), cx = 0, cy = 0;
+    v4.forEach(function (s) { cx += X(s.V) / 4; cy += Y(pres(s)) / 4; });
+    c.font = "700 15px " + FONT; c.textAlign = "center"; c.textBaseline = "middle";
+    v4.forEach(function (s, i) {
+      var x = X(s.V), y = Y(pres(s)), dx = x - cx, dy = y - cy, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      c.fillStyle = col.ink; c.beginPath(); c.arc(x, y, 4, 0, Math.PI * 2); c.fill();
+      c.fillText(VERT[i], x + dx / d * 16, y + dy / d * 16);
+    });
+    c.fillStyle = col.surface; c.strokeStyle = col.ink; c.lineWidth = 3;
+    c.beginPath(); c.arc(X(now.V), Y(now.P), 7, 0, Math.PI * 2); c.fill(); c.stroke();
+  }
+
+  function drawFlow(t) {
+    var wq1 = 30, wq2 = 30 * t.Q2 / t.Q1, ww = 30 * t.W / t.Q1;
+    $("flow").innerHTML = '<svg viewBox="0 0 220 210" role="img" aria-label="고온 열원에서 열기관으로 들어온 열이 일과 방출한 열로 나뉘는 그림" font-size="14">' +
+      '<rect x="40" y="6" width="140" height="34" rx="6" fill="var(--heat)"/><text x="110" y="28" text-anchor="middle" fill="#fff" font-weight="600">고온 열원 T₁</text>' +
+      '<rect x="40" y="170" width="140" height="34" rx="6" fill="var(--cold)"/><text x="110" y="192" text-anchor="middle" fill="#fff" font-weight="600">저온 열원 T₂</text>' +
+      '<rect x="' + (110 - wq1 / 2) + '" y="40" width="' + wq1 + '" height="44" fill="var(--heat)" opacity="0.85"/>' +
+      '<rect x="' + (110 - wq2 / 2) + '" y="126" width="' + wq2 + '" height="44" fill="var(--cold)" opacity="0.85"/>' +
+      '<rect x="138" y="' + (105 - ww / 2) + '" width="58" height="' + ww + '" fill="var(--work)" opacity="0.85"/>' +
+      '<path d="M196 ' + (105 - ww / 2 - 6) + 'L214 105L196 ' + (105 + ww / 2 + 6) + 'z" fill="var(--work)"/>' +
+      '<circle cx="110" cy="105" r="30" fill="var(--surface)" stroke="var(--ink)" stroke-width="3"/>' +
+      '<text x="110" y="110" text-anchor="middle" fill="var(--ink)" font-weight="700">열기관</text>' +
+      '<text x="' + (116 + wq1 / 2) + '" y="66" fill="var(--heat)" font-weight="700">Q₁</text>' +
+      '<text x="' + (116 + wq2 / 2) + '" y="152" fill="var(--cold)" font-weight="700">Q₂</text>' +
+      '<text x="190" y="' + (105 - ww / 2 - 12) + '" text-anchor="middle" fill="var(--work)" font-weight="700">W</text></svg>';
+  }
+
+  var lastKey = "";
+  function updateUI() {
+    var eng = ENG[view], st = stateAt(view, p), t = totals(view);
+    setText($("status"), eng.name + " · " + VERT[st.k] + " → " + VERT[(st.k + 1) % 4] + " " + eng.labels[st.k]);
+    setText($("r-p"), st.P.toFixed(2)); setText($("r-v"), st.V.toFixed(2)); setText($("r-t"), String(Math.round(st.T)));
+    setText($("phase-val"), (p / 4 * 100).toFixed(0) + " %");
+    if (document.activeElement !== $("phase")) $("phase").value = Math.round(p * 100);
+    setText($("btn-play"), playing ? "⏸ 멈춤" : "▶ 재생");
+    var rows = $("proc-body").children;
+    for (var k = 0; k < rows.length; k++) rows[k].className = k === st.k ? "now" : "";
+    var key = view + T1 + "," + T2;
+    if (key !== lastKey) {
+      lastKey = key;
+      renderProc();
+      setText($("v-q1"), t.Q1 + " J"); setText($("v-q2"), t.Q2 + " J"); setText($("v-w"), t.W + " J"); setText($("v-e"), pct(t.e));
+      var ce = 1 - T2 / T1;
+      setText($("v-e-note"), view === "carnot" ? "= 1 − T₂/T₁ = 1 − " + T2 + "/" + T1 + " = " + pct(ce) : "같은 두 열원 사이의 카르노 기관: " + pct(totals("carnot").e));
+      drawFlow(t);
+    }
+    updatePred();
+  }
+  function renderProc() {
+    var b = $("proc-body"), ft = $("proc-foot"), eng = ENG[view], sw = 0, sq = 0;
+    b.textContent = ""; ft.textContent = "";
+    for (var k = 0; k < 4; k++) {
+      var e = procE(view, k), tr = document.createElement("tr");
+      [VERT[k] + " → " + VERT[(k + 1) % 4], eng.labels[k], sg(e.Q), sg(e.W), sg(e.dU)].forEach(function (x) { var td = document.createElement("td"); td.textContent = x; tr.appendChild(td); });
+      (function (kk) { tr.addEventListener("click", function () { p = kk; playing = false; updateUI(); }); })(k);
+      b.appendChild(tr); sw += e.W; sq += e.Q;
+    }
+    var fr = document.createElement("tr");
+    ["한 번 순환", "", sg(sq), sg(sw), "0"].forEach(function (x) { var td = document.createElement("td"); td.textContent = x; fr.appendChild(td); });
+    ft.appendChild(fr);
+  }
+
+  function renderCases() {
+    var box = $("cases"); box.textContent = "";
+    ORDER.concat(["sum"]).forEach(function (id) {
+      var b = document.createElement("button"); b.type = "button"; b.id = "case-" + id; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(view === id)); b.textContent = id === "sum" ? "한눈에 정리" : ENG[id].name;
+      b.addEventListener("click", function () { go(id); });
+      box.appendChild(b);
+    });
+  }
+  function renderPred() {
+    var pr = ENG[view].pred, box = $("pred-opts");
+    $("pred-q").textContent = pr.q; box.textContent = "";
+    pr.opts.forEach(function (o, i) {
+      var b = document.createElement("button"); b.type = "button"; b.textContent = o; b.setAttribute("aria-pressed", String(picks[view] === i));
+      b.addEventListener("click", function () { picks[view] = i; renderPred(); updatePred(); });
+      box.appendChild(b);
+    });
+  }
+  function predReady() { return view === "carnot" ? moved.t1 : cycles.stirling >= 1; }
+  function updatePred() {
+    if (view === "sum") return;
+    var pr = ENG[view].pred, m, pk = picks[view];
+    if (pk === undefined) m = "먼저 예상을 골라 주세요.";
+    else if (!predReady()) m = pr.wait;
+    else m = pk === pr.ans ? "예상과 같습니다. " + pr.ok : "예상과 다릅니다. " + pr.no;
+    setText($("pred-msg"), m);
+  }
+  function renderAsks() {
+    var ol = $("asks"); ol.textContent = "";
+    ENG[view].asks.forEach(function (t) {
+      var li = document.createElement("li"), q = document.createElement("div"), d = document.createElement("details"), sm = document.createElement("summary"), a = document.createElement("p");
+      q.textContent = t.q; sm.textContent = "정답 보기"; a.textContent = t.a; d.className = "answer";
+      d.appendChild(sm); d.appendChild(a); li.appendChild(q); li.appendChild(d); ol.appendChild(li);
+    });
+  }
+  function addLog(force) {
+    var t = totals(view), row = [ENG[view].name, T1, T2, t.Q1, t.Q2, t.W, pct(t.e)], key = row.join("|");
+    var lastRow = logRows.length ? logRows[logRows.length - 1].join("|") : "";
+    if (!force && key === lastRow) return;
+    if (!force && logRows.some(function (r) { return r.join("|") === key; })) return;
+    logRows.push(row); renderLog();
+  }
+  function renderLog() {
+    var b = $("log-body"); b.textContent = "";
+    $("log-title").textContent = logRows.length ? "기록 (" + logRows.length + ")" : "기록";
+    if (!logRows.length) {
+      var r = document.createElement("tr"), td = document.createElement("td"); td.colSpan = 8; td.textContent = "아직 기록이 없습니다. 한 번 순환이 끝나면 자동으로 기록됩니다.";
+      td.style.textAlign = "left"; td.style.color = "var(--muted)"; r.appendChild(td); b.appendChild(r); return;
+    }
+    logRows.forEach(function (row, i) {
+      var r = document.createElement("tr");
+      [i + 1].concat(row).forEach(function (x) { var td = document.createElement("td"); td.textContent = x; r.appendChild(td); });
+      b.appendChild(r);
+    });
+  }
+
+  /* ---------- 한눈에 정리 ---------- */
+  var picked = null;
+  function renderSummary() {
+    var sc = scale(), W = 440, H = 330, ml = 50, mt = 24, gw = 370, gh = 260;
+    function X(v) { return ml + v / sc.V.max * gw; }
+    function Y(pp) { return mt + gh - pp / sc.P.max * gh; }
+    var colorOf = { carnot: "var(--accent)", stirling: "var(--mark)" };
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="카르노 기관과 스털링 기관의 순환 과정을 함께 그린 압력-부피 그래프" font-size="14">' +
+      '<path d="M' + ml + ' ' + mt + 'V' + (mt + gh) + 'H' + (ml + gw) + '" fill="none" stroke="var(--ink)" stroke-width="2"/>' +
+      '<text x="6" y="16" fill="var(--muted)">압력</text><text x="' + (ml + gw) + '" y="' + (H - 8) + '" text-anchor="end" fill="var(--muted)">부피</text>';
+    ORDER.forEach(function (id) {
+      var d = "";
+      for (var k = 0; k < 4; k++) for (var i = 0; i <= 40; i++) { var st = stateAt(id, k + i / 40 * 0.99999); d += (d ? "L" : "M") + X(st.V).toFixed(1) + " " + Y(st.P).toFixed(1); }
+      d += "Z";
+      var v = verts(id), lab = v[2];
+      s += '<g class="sg" data-id="' + id + '" tabindex="0" role="button" aria-label="' + ENG[id].name + ' 강조">' +
+        '<path d="' + d + '" fill="' + colorOf[id] + '" fill-opacity="0.12" stroke="' + colorOf[id] + '" stroke-width="3.5" stroke-linejoin="round"/>' +
+        '<text x="' + (X(lab.V) + (id === "carnot" ? -6 : 8)) + '" y="' + (Y(pres(lab)) - 12) + '" text-anchor="' + (id === "carnot" ? "end" : "start") + '" font-weight="700" fill="' + colorOf[id] + '">' + ENG[id].name + '</text></g>';
+    });
+    var a = verts("carnot")[0], b = verts("carnot")[1];
+    s += '<text x="' + (X(a.V) + 10) + '" y="' + (Y(pres(a)) - 6) + '" font-weight="700" fill="var(--ink)">a</text>' +
+      '<text x="' + (X(b.V) + 8) + '" y="' + (Y(pres(b)) - 8) + '" font-weight="700" fill="var(--ink)">b</text></svg>';
+    $("sum-graph").innerHTML = s;
+    $("sum-note").textContent = "지금 온도 T₁ = " + T1 + " K, T₂ = " + T2 + " K 기준. 두 기관은 a → b 등온 팽창을 함께 쓰고, 그 뒤 과정이 다르다.";
+
+    var rows = $("sum-rows"), cards = $("sum-cards"); rows.textContent = ""; cards.textContent = "";
+    var info = {
+      carnot: { order: "등온 팽창 → 단열 팽창 → 등온 압축 → 단열 압축", inn: "등온 팽창", out: "등온 압축" },
+      stirling: { order: "등온 팽창 → 등적 냉각 → 등온 압축 → 등적 가열", inn: "등온 팽창, 등적 가열", out: "등적 냉각, 등온 압축" }
+    };
+    ORDER.forEach(function (id) {
+      var t = totals(id), tr = document.createElement("tr");
+      tr.setAttribute("data-id", id); tr.tabIndex = 0;
+      [ENG[id].name, info[id].order, info[id].inn, info[id].out, t.Q1 + " J", t.Q2 + " J", t.W + " J", pct(t.e)].forEach(function (x) { var td = document.createElement("td"); td.textContent = x; tr.appendChild(td); });
+      rows.appendChild(tr);
+      var card = document.createElement("section"); card.className = "panel sum-card";
+      var h = document.createElement("h2"); h.textContent = ENG[id].name; card.appendChild(h);
+      var pcore = document.createElement("p"); pcore.textContent = ENG[id].core; card.appendChild(pcore);
+      var ol = document.createElement("ol");
+      ENG[id].labels.forEach(function (l, k) { var li = document.createElement("li"); li.textContent = VERT[k] + " → " + VERT[(k + 1) % 4] + "  " + l; ol.appendChild(li); });
+      card.appendChild(ol);
+      var bt = document.createElement("button"); bt.type = "button"; bt.className = "btn"; bt.id = "go-" + id; bt.textContent = ENG[id].name + " 탐구하기";
+      bt.addEventListener("click", function () { go(id); }); card.appendChild(bt);
+      cards.appendChild(card);
+    });
+    var top = document.querySelector(".sum-top"), marks = top.querySelectorAll("[data-id]");
+    function apply() {
+      top.classList.toggle("has-pick", picked !== null);
+      Array.prototype.forEach.call(marks, function (m) { m.classList.toggle("on", m.getAttribute("data-id") === picked); });
+    }
+    Array.prototype.forEach.call(marks, function (m) {
+      function pick() { picked = picked === m.getAttribute("data-id") ? null : m.getAttribute("data-id"); apply(); }
+      m.addEventListener("click", pick);
+      m.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+    });
+    apply();
+  }
+
+  function go(id) {
+    view = id;
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* 파일로 열 때 */ }
+    $("lab").hidden = id === "sum"; $("summary").hidden = id !== "sum";
+    renderCases();
+    if (id === "sum") { renderSummary(); window.scrollTo(0, 0); return; }
+    $("cond").textContent = ENG[id].cond;
+    p = 0; cylX = null; lastKey = "";
+    renderPred(); renderAsks(); updateUI();
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- 조작 ---------- */
+  $("phase").addEventListener("input", function () { p = Math.min(3.999, parseFloat(this.value) / 100); playing = false; updateUI(); });
+  $("btn-play").addEventListener("click", function () { playing = !playing; updateUI(); });
+  $("btn-step").addEventListener("click", function () { p = (Math.floor(p) + 1) % 4; playing = false; updateUI(); });
+  $("btn-reset").addEventListener("click", function () { p = 0; cylX = null; updateUI(); });
+  $("log-now").addEventListener("click", function () { addLog(true); });
+  function setTemps(changed) {
+    var a = parseInt($("t1").value, 10), b = parseInt($("t2").value, 10);
+    /* 고온이 저온보다 100 K 이상 높게 유지 */
+    if (a - b < 100) { if (changed === "t1") { b = a - 100; $("t2").value = b; } else { a = b + 100; $("t1").value = a; } }
+    T1 = a; T2 = b;
+    $("t1-val").textContent = T1 + " K"; $("t2-val").textContent = T2 + " K";
+  }
+  $("t1").addEventListener("input", function () { setTemps("t1"); moved.t1 = true; updateUI(); });
+  $("t2").addEventListener("input", function () { setTemps("t2"); updateUI(); });
+  Array.prototype.forEach.call($("acts").children, function (b) {
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call($("acts").children, function (o) {
+        o.setAttribute("aria-selected", String(o === b));
+        $("act-" + o.getAttribute("data-act")).hidden = o !== b;
+      });
+    });
+  });
+
+  var last = 0;
+  function frame(ms) {
+    var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms;
+    if (view !== "sum") {
+      if (playing) {
+        p += dt / 2.2;
+        if (p >= 4) { p -= 4; cycles[view]++; addLog(false); }
+      }
+      colors(); drawScene(dt); drawPV(); updateUI();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  colors(); setTemps("t1"); renderLog();
+  var h0 = location.hash.replace("#", "");
+  go(ENG[h0] || h0 === "sum" ? h0 : "carnot");
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
