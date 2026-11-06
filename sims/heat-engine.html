@@ -66,6 +66,7 @@
 .sum-graph svg { display: block; width: 100%; height: auto; }
 .sum-table th, .sum-table td { text-align: left; white-space: normal; vertical-align: top; }
 .sum-table td:first-child { font-weight: 600; white-space: nowrap; }
+.sum-table td:nth-child(n+5) { white-space: nowrap; }
 .sum-top [data-id] { cursor: pointer; transition: opacity 0.15s; }
 .sum-top.has-pick [data-id]:not(.on) { opacity: 0.22; }
 .sum-top.has-pick tr.on { background: var(--accent-soft); }
@@ -571,10 +572,10 @@
       var d = "";
       for (var k = 0; k < 4; k++) for (var i = 0; i <= 40; i++) { var st = stateAt(id, k + i / 40 * 0.99999); d += (d ? "L" : "M") + X(st.V).toFixed(1) + " " + Y(st.P).toFixed(1); }
       d += "Z";
-      var v = verts(id), lab = v[2];
+      var v = verts(id), lab = id === "carnot" ? v[2] : v[3];
       s += '<g class="sg" data-id="' + id + '" tabindex="0" role="button" aria-label="' + ENG[id].name + ' 강조">' +
         '<path d="' + d + '" fill="' + colorOf[id] + '" fill-opacity="0.12" stroke="' + colorOf[id] + '" stroke-width="3.5" stroke-linejoin="round"/>' +
-        '<text x="' + (X(lab.V) + (id === "carnot" ? -6 : 8)) + '" y="' + (Y(pres(lab)) - 12) + '" text-anchor="' + (id === "carnot" ? "end" : "start") + '" font-weight="700" fill="' + colorOf[id] + '">' + ENG[id].name + '</text></g>';
+        '<text x="' + (X(lab.V) + (id === "carnot" ? 0 : -10)) + '" y="' + (Y(pres(lab)) + (id === "carnot" ? 24 : 5)) + '" text-anchor="end" font-weight="700" fill="' + colorOf[id] + '">' + ENG[id].name + '</text></g>';
     });
     var a = verts("carnot")[0], b = verts("carnot")[1];
     s += '<text x="' + (X(a.V) + 10) + '" y="' + (Y(pres(a)) - 6) + '" font-weight="700" fill="var(--ink)">a</text>' +
