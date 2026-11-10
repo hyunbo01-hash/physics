@@ -117,7 +117,7 @@
     compare: { mode: "m", t: 0 },
     shadow: { A: 0.16, w: 1.6, t: 0, showV: true, showA: true }
   };
-  var G = 9.8, VL0 = 0.9, VAMAX = 0.8;
+  var G = 9.8, VL0 = 0.6, VAMAX = 0.8;
   function wVert() { return Math.sqrt(S.vertical.k / S.vertical.m); }
   function x0Vert() { return S.vertical.m * G / S.vertical.k; }
   /* 위 끝에서도 용수철이 늘어나 있도록 진폭은 평형 상태로 늘어난 길이보다 작게 */
@@ -335,7 +335,9 @@
   }
   function drawVertical() {
     var f = fit($("scene")), c = f.c, w = f.w, h = f.h, s = S.vertical, k = kin("vertical"), wv = wVert(), x0 = x0Vert();
-    var narrow = w < 500, P = (h - 70) / (VL0 + 2 * G / 10 + VAMAX + 0.75), top = 22, bs = 46, cx = s.cmp ? w * 0.27 : narrow ? w * 0.42 : w * 0.4;
+    /* 그림이 캔버스 높이를 꽉 채우도록 지금 물체의 늘어난 길이와 진폭에 맞춰 축척을 정한다 */
+    var narrow = w < 500, top = 22, bs = Math.max(46, Math.round(h * 0.12)), cx = s.cmp ? w * 0.27 : narrow ? w * 0.42 : w * 0.4;
+    var P = (h - top - bs - 28) / (VL0 + x0 + aMaxVert());
     var natC = top + VL0 * P + bs / 2, eqC = natC + x0 * P, cy = eqC - k.x * P, by = cy - bs / 2;
     vgeo = { cx: cx, cy: cy, bs: bs, eqC: eqC, P: P };
     /* 천장 */
@@ -360,7 +362,8 @@
     c.fillStyle = col.accent; c.fillRect(cx - bs / 2, by, bs, bs);
     /* 화살표: 중력(물체 아래쪽), 탄성력(물체 위쪽) — 힘의 크기에 비례 */
     if (s.showF) {
-      var fs = Math.min(3, (h * 0.25) / (s.k * (2 * G / 10 + VAMAX))), Fg = s.m * G, Fe = s.k * (x0 - k.x);
+      /* 중력 화살표가 그림 아래로 넘치지 않는 길이를 기준으로, 탄성력도 같은 비율로 그린다 */
+      var fs = (bs / 2 + 20) / (s.m * G), Fg = s.m * G, Fe = s.k * (x0 - k.x);
       arrow(c, cx - 12, cy, cx - 12, cy + Fg * fs, col.heat, 4);
       text(c, "중력", cx - 20, cy + Fg * fs - 4, col.heat, "right", 14, 700);
       if (Math.abs(Fe) > 0.05) {
