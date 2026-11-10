@@ -312,7 +312,7 @@
     var cyw = Math.cos(cam.yaw), syw = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), spi = Math.sin(cam.pitch);
     var x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw;
     var y2 = y * cp - z1 * spi, z2 = y * spi + z1 * cp;
-    var d = 8 - z2, f = Math.min(w, h * 1.6) * 1.3, s = f / d;
+    var d = 8 - z2, f = Math.min(w, h * 1.6) * 1.6, s = f / d;
     return [w / 2 + x1 * s, h / 2 - y2 * s, s];
   }
   function poly(c, pts, w, h, fill, stroke, lw) {
@@ -337,18 +337,18 @@
   }
   function drawShadow() {
     var f = fit($("scene")), c = f.c, w = f.w, h = f.h, s = S.shadow, k = kin("shadow");
-    var R = s.A / AMAX * 1.6, bx = k.x / AMAX * 1.6, bz = -s.A * Math.sin(k.th) / AMAX * 1.6;
+    var R = s.A / AMAX * 2, bx = k.x / AMAX * 2, bz = -s.A * Math.sin(k.th) / AMAX * 2;
     /* 바닥과 벽 */
     poly(c, [[-2.6, 0, -1.5], [2.6, 0, -1.5], [2.6, 0, 1.6], [-2.6, 0, 1.6]], w, h, col.bg, col.line, 1);
     poly(c, [[-2.6, 0, DEPTH], [2.6, 0, DEPTH], [2.6, 2.3, DEPTH], [-2.6, 2.3, DEPTH]], w, h, col["accent-soft"], col.line, 1.5);
     for (var gx = -2; gx <= 2.01; gx += 1) line3(c, [gx, 0, -1.5], [gx, 0, 1.6], w, h, col.line, 1);
     /* 벽 위 눈금: 그림자의 변위 */
-    line3(c, [-1.8, CY, DEPTH + 0.01], [1.8, CY, DEPTH + 0.01], w, h, col.muted, 1.5);
-    line3(c, [0, CY - 0.35, DEPTH + 0.01], [0, CY + 0.35, DEPTH + 0.01], w, h, col.accent, 1.5, [4, 4]);
+    line3(c, [-2.3, CY, DEPTH + 0.01], [2.3, CY, DEPTH + 0.01], w, h, col.muted, 1.5);
+    line3(c, [0, CY - 0.35, DEPTH + 0.01], [0, 1.95, DEPTH + 0.01], w, h, col.accent, 1.5, [4, 4]);
     [-1, 1].forEach(function (sn) { line3(c, [sn * R, CY - 0.15, DEPTH + 0.01], [sn * R, CY + 0.15, DEPTH + 0.01], w, h, col.muted, 2); });
     var lbl = function (p, t, color, align) { var q = project(p, w, h); c.fillStyle = color; c.textAlign = align || "center"; c.fillText(t, q[0], q[1]); };
     c.font = "600 14px " + FONT; c.textBaseline = "middle";
-    lbl([0, CY + 0.55, DEPTH], "평형점 O", col.accent);
+    lbl([0, 2.1, DEPTH], "평형점 O", col.accent);
     lbl([R, CY - 0.32, DEPTH], "+A", col.muted); lbl([-R, CY - 0.32, DEPTH], "−A", col.muted);
     lbl([-2.35, 2.1, DEPTH], "벽(스크린)", col.muted, "left");
     /* 그림자 */
@@ -365,7 +365,7 @@
     sp.forEach(function (p, i) { var q = project(p, w, h); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.stroke();
     var cube = []; [-0.18, 0.18].forEach(function (dx) { [0, 0.34].forEach(function (dy) { [-0.18, 0.18].forEach(function (dz) { cube.push(project([bx + dx, dy, TRACKZ + dz], w, h)); }); }); });
     var hb = hull(cube); c.fillStyle = col.accent; c.beginPath(); hb.forEach(function (q, i) { if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.closePath(); c.fill();
-    lbl([bx, 0.62, TRACKZ], "용수철 진자", col.accent);
+    lbl([-1.9, 0.62, TRACKZ], "용수철 진자", col.accent);
     /* 빛줄기 (앞에서 벽 쪽으로) */
     for (var r = -1; r <= 1; r += 2) line3(c, [r * 2.2, CY, 1.55], [r * 2.2, CY, DEPTH + 0.2], w, h, col.mark, 1.5, [8, 6]);
     var a1 = project([2.2, CY + 0.25, 1.4], w, h), a2 = project([2.2, CY + 0.25, 0.6], w, h);
@@ -382,7 +382,7 @@
     var g = c.createRadialGradient(b[0] - br * 0.35, b[1] - br * 0.35, br * 0.1, b[0], b[1], br);
     g.addColorStop(0, "#ffffff"); g.addColorStop(1, col.heat);
     c.fillStyle = g; c.beginPath(); c.arc(b[0], b[1], br, 0, Math.PI * 2); c.fill();
-    lbl([bx, CY + 0.4, bz], "등속 원운동", col.heat);
+    lbl([0, CY - 0.3, R + 0.35], "등속 원운동", col.heat);
   }
 
   /* ---------- 그래프: x, v, a 를 세 줄로 ---------- */
