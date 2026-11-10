@@ -308,7 +308,7 @@
   /* ---------- 원운동의 그림자 (3차원) ---------- */
   var DEPTH = -1.5, CY = 1.25, TRACKZ = -1.2;
   function project(p, w, h) {
-    var x = p[0], y = p[1] - 0.9, z = p[2] + 0.4;
+    var x = p[0], y = p[1] - 1.0, z = p[2] + 0.4;
     var cyw = Math.cos(cam.yaw), syw = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), spi = Math.sin(cam.pitch);
     var x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw;
     var y2 = y * cp - z1 * spi, z2 = y * spi + z1 * cp;
@@ -365,7 +365,7 @@
     sp.forEach(function (p, i) { var q = project(p, w, h); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.stroke();
     var cube = []; [-0.18, 0.18].forEach(function (dx) { [0, 0.34].forEach(function (dy) { [-0.18, 0.18].forEach(function (dz) { cube.push(project([bx + dx, dy, TRACKZ + dz], w, h)); }); }); });
     var hb = hull(cube); c.fillStyle = col.accent; c.beginPath(); hb.forEach(function (q, i) { if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.closePath(); c.fill();
-    lbl([-1.9, 0.62, TRACKZ], "용수철 진자", col.accent);
+    lbl([-1.6, 0.08, TRACKZ + 0.55], "용수철 진자", col.accent);
     /* 빛줄기 (앞에서 벽 쪽으로) */
     for (var r = -1; r <= 1; r += 2) line3(c, [r * 2.2, CY, 1.55], [r * 2.2, CY, DEPTH + 0.2], w, h, col.mark, 1.5, [8, 6]);
     var a1 = project([2.2, CY + 0.25, 1.4], w, h), a2 = project([2.2, CY + 0.25, 0.6], w, h);
@@ -382,7 +382,7 @@
     var g = c.createRadialGradient(b[0] - br * 0.35, b[1] - br * 0.35, br * 0.1, b[0], b[1], br);
     g.addColorStop(0, "#ffffff"); g.addColorStop(1, col.heat);
     c.fillStyle = g; c.beginPath(); c.arc(b[0], b[1], br, 0, Math.PI * 2); c.fill();
-    lbl([0, CY - 0.3, R + 0.35], "등속 원운동", col.heat);
+    lbl([0, CY + 0.5, R], "등속 원운동", col.heat);
   }
 
   /* ---------- 그래프: x, v, a 를 세 줄로 ---------- */
