@@ -268,7 +268,7 @@
   }
   function drawShadow() {
     var f = fit($("scene")), c = f.c, w = f.w, h = f.h, s = S.shadow, k = kin("shadow");
-    var R = s.A / AMAX * 2, cs = Math.cos(k.th), sn = Math.sin(k.th), bx = R * cs, bz = -R * sn, LV = 0.85, LA = 0.85;
+    var R = s.A / AMAX * 1.5, cs = Math.cos(k.th), sn = Math.sin(k.th), bx = R * cs, bz = -R * sn, LV = 0.85, LA = 0.85;
     path3(c, [[-2.6, 0, -1.5], [2.6, 0, -1.5], [2.6, 0, 1.6], [-2.6, 0, 1.6]], w, h, true); c.fillStyle = col.bg; c.fill();
     path3(c, [[-2.6, 0, DEPTH], [2.6, 0, DEPTH], [2.6, 2.3, DEPTH], [-2.6, 2.3, DEPTH]], w, h, true); c.fillStyle = col["accent-soft"]; c.fill();
     c.strokeStyle = col.line; c.lineWidth = 1.5; c.stroke();
