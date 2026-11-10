@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="용수철 진자의 단진동과, 등속 원운동하는 물체의 그림자가 단진동함을 3차원으로 돌려 보며 탐구하는 시뮬레이션">
+<title>단진동 탐구</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/sim.css?v=6">
+<style>
+/* 이 페이지의 물리량 색: 변위 x, 속도 v, 가속도 a */
+:root { --x: var(--accent); --v: var(--mark); --a: var(--inner); }
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+.cond { margin: 0; color: var(--muted); font-size: 0.9375rem; }
+.stage-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.25rem 1rem; }
+.status { font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; }
+#scene { aspect-ratio: 16 / 10; touch-action: pan-y; }
+#graph { aspect-ratio: 4 / 3.4; }
+.slider-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.slider-head label { font-weight: 600; }
+.ctl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 0.75rem; }
+@media (max-width: 34rem) { .ctl-grid { grid-template-columns: minmax(0, 1fr); } }
+.views { display: flex; flex-wrap: wrap; gap: 0.375rem; align-items: center; }
+.views .note { margin-right: 0.25rem; }
+
+/* 핵심 관계 */
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; }
+@media (max-width: 44rem) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0.875rem; border-radius: 10px; border: 1px solid var(--line); border-top: 4px solid var(--c); min-width: 0; }
+.tile .name { font-size: 0.875rem; font-weight: 600; color: var(--c); }
+.tile .val { font-weight: 700; font-size: clamp(1.25rem, 2.8vw, 1.625rem); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tile .mean { font-size: 0.875rem; color: var(--muted); }
+.tile.key { grid-column: span 2; background: var(--bg); border: 2px solid var(--c); border-top-width: 4px; }
+.tile.key .val { color: var(--c); }
+.track { position: relative; height: 0.5rem; background: var(--bg); border-radius: 999px; margin-top: 0.25rem; }
+.track::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: var(--muted); }
+.fill { position: absolute; top: 0; bottom: 0; border-radius: 999px; background: var(--c); }
+
+/* 탐구 전 활동 */
+.predict { display: flex; flex-direction: column; gap: 0.625rem; }
+.signs { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.signs button { font: inherit; font-size: 0.9375rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.375rem 0.75rem; cursor: pointer; }
+.signs button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.msg { margin: 0; padding: 0.4375rem 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.9375rem; }
+.asks { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; max-width: 46rem; }
+.answer { margin-top: 0.375rem; }
+.answer summary { display: inline-block; cursor: pointer; list-style: none; font-size: 0.875rem; font-weight: 600; color: var(--accent); border: 1px solid var(--line); border-radius: 8px; padding: 0.25rem 0.75rem; }
+.answer summary::-webkit-details-marker { display: none; }
+.answer summary::after { content: " ▾"; }
+.answer[open] summary { background: var(--accent-soft); border-color: var(--accent); }
+.answer[open] summary::after { content: " ▴"; }
+.answer p { margin: 0.5rem 0 0; padding: 0.625rem 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.9375rem; }
+
+/* 한눈에 정리 */
+.law-banner { margin: 0; padding: 0.75rem 1rem; background: var(--accent-soft); border-radius: 10px; font-weight: 700; font-size: 1.0625rem; }
+.sum-top { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 1rem; }
+@media (max-width: 56rem) { .sum-top { grid-template-columns: minmax(0, 1fr); } }
+.sum-graph svg { display: block; width: 100%; height: auto; }
+.sum-table th, .sum-table td { text-align: left; white-space: normal; vertical-align: top; }
+.sum-table td:first-child { font-weight: 600; white-space: nowrap; }
+.sum-top [data-id] { cursor: pointer; transition: opacity 0.15s; }
+.sum-top.has-pick [data-id]:not(.on) { opacity: 0.22; }
+.sum-top.has-pick tr.on { background: var(--accent-soft); }
+@media (prefers-reduced-motion: reduce) { .sum-top [data-id] { transition: none; } }
+.sum-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+.sum-card p { margin: 0; }
+.sum-card .big { font-weight: 700; font-size: 1.375rem; color: var(--accent); }
+.sum-card .btn { align-self: flex-start; margin-top: auto; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="sim-head">
+    <a class="back" href="../index.html">← 물리 수업 자료실</a>
+    <span class="lesson-code">역학과 에너지 · III-1-01</span>
+    <h1>단진동 탐구</h1>
+  </header>
+
+  <div class="seg" id="cases" role="tablist" aria-label="탐구 고르기"></div>
+
+  <div class="stack" id="lab">
+    <section class="panel" aria-label="탐구 전 활동">
+      <div class="seg" id="acts" role="tablist" aria-label="탐구 전 활동">
+        <button type="button" role="tab" data-act="predict" aria-selected="true">예상하기</button>
+        <button type="button" role="tab" data-act="think" aria-selected="false">생각해 보기</button>
+      </div>
+      <div id="act-predict" class="predict">
+        <p class="note" id="pred-q"></p>
+        <div class="signs" id="pred-opts" role="group" aria-label="예상 고르기"></div>
+        <p class="msg" id="pred-msg" aria-live="polite"></p>
+      </div>
+      <div id="act-think" hidden><ol class="asks" id="asks"></ol></div>
+    </section>
+
+    <div class="cols">
+      <section class="panel" aria-label="운동하는 모습">
+        <div class="stage-head"><div class="status" id="status" aria-live="polite"></div></div>
+        <p class="cond" id="cond"></p>
+        <canvas id="scene" role="img" aria-label="운동하는 모습"></canvas>
+        <div class="views" id="views" hidden>
+          <span class="note">보는 방향</span>
+          <button class="btn" type="button" id="cam-side">비스듬히</button>
+          <button class="btn" type="button" id="cam-front">빛이 오는 방향(정면)</button>
+          <button class="btn" type="button" id="cam-top">위에서</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" type="button" id="btn-play">⏸ 멈춤</button>
+          <button class="btn" type="button" id="btn-reset">처음으로</button>
+        </div>
+        <div class="ctl-grid" id="ctls"></div>
+      </section>
+
+      <section class="panel" aria-label="시간에 따른 변위, 속도, 가속도 그래프">
+        <div class="stage-head"><h2>변위·속도·가속도–시간 그래프</h2><span class="note">오른쪽 끝이 지금</span></div>
+        <canvas id="graph" role="img" aria-label="시간에 따른 변위, 속도, 가속도 그래프"></canvas>
+      </section>
+    </div>
+
+    <section class="panel" aria-label="지금의 값과 단진동의 식">
+      <div class="tiles">
+        <div class="tile" style="--c: var(--x)"><span class="name">변위 x</span><span class="val" id="v-x"></span><div class="track"><div class="fill" id="b-x"></div></div></div>
+        <div class="tile" style="--c: var(--v)"><span class="name">속도 v</span><span class="val" id="v-v"></span><div class="track"><div class="fill" id="b-v"></div></div></div>
+        <div class="tile" style="--c: var(--a)"><span class="name">가속도 a</span><span class="val" id="v-a"></span><div class="track"><div class="fill" id="b-a"></div></div></div>
+        <div class="tile" style="--c: var(--ink)"><span class="name" id="n-extra"></span><span class="val" id="v-extra"></span><span class="mean" id="m-extra"></span></div>
+        <div class="tile key" style="--c: var(--a)"><span class="name">가속도와 변위의 관계</span><span class="val" id="v-rel"></span><span class="mean">가속도는 변위에 비례하고 방향은 반대 → 단진동</span></div>
+        <div class="tile key" style="--c: var(--accent)"><span class="name">주기 T</span><span class="val" id="v-t"></span><span class="mean" id="m-t"></span></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="기록">
+      <h2 id="log-title">기록</h2>
+      <p class="note">조건을 바꿀 때마다 결과가 쌓입니다. 질량·용수철 상수·진폭을 바꿔 주기를 비교해 보세요.</p>
+      <div class="btn-row"><button class="btn" type="button" id="log-now">지금 결과 기록하기</button></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>탐구</th><th>조건</th><th>진폭 A (m)</th><th>주기 T (s)</th><th>최대 속력 (m/s)</th><th>최대 가속도 (m/s²)</th></tr></thead>
+          <tbody id="log-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="stack" id="summary" hidden>
+    <p class="law-banner">단진동: a = −ω²x &nbsp;·&nbsp; x = A cos ωt &nbsp;·&nbsp; 용수철 진자 T = 2π√(m/k) &nbsp;·&nbsp; 원운동의 그림자 T = 2π/ω</p>
+    <div class="sum-top">
+      <section class="panel sum-graph" aria-label="한 주기 동안의 변위, 속도, 가속도">
+        <h2>한 주기 동안</h2>
+        <div id="sum-graph"></div>
+        <p class="note">세 그래프는 각각의 최댓값을 같은 높이로 맞춰 그렸다.</p>
+      </section>
+      <section class="panel" aria-label="변위, 속도, 가속도 비교 표">
+        <h2>한눈에 비교</h2>
+        <div class="table-wrap">
+          <table class="sum-table">
+            <thead><tr><th>물리량</th><th>식</th><th>최댓값</th><th>평형점 (x = 0)</th><th>양 끝 (x = ±A)</th></tr></thead>
+            <tbody id="sum-rows"></tbody>
+          </table>
+        </div>
+        <p class="note">그래프의 선이나 표의 줄을 누르면 그 물리량만 진하게 보입니다. 한 번 더 누르면 원래대로 돌아옵니다.</p>
+      </section>
+    </div>
+    <div class="sum-cards" id="sum-cards"></div>
+  </div>
+
+  <footer>마찰과 공기 저항이 없고 용수철의 질량은 무시합니다. 그래프와 값은 x = A cos(ωt + φ) 로 계산합니다.</footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var FONT = "'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif";
+  var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var AMAX = 0.2, WIN = 6;
+
+  var CASES = {
+    spring: {
+      name: "용수철 진자",
+      cond: "마찰 없는 수평면에서 용수철에 매달린 물체. 물체를 직접 끌어 당겼다가 놓아도 됩니다.",
+      pred: {
+        q: "물체의 질량을 4배로 늘리면 단진동의 주기는 어떻게 될까요?",
+        opts: ["2배가 된다", "4배가 된다", "절반이 된다", "변하지 않는다"], ans: 0,
+        wait: "질량 슬라이더를 1 kg 에서 4 kg 으로 바꾸고 주기를 비교해 보세요.",
+        ok: "T = 2π√(m/k) 이므로 질량이 4배면 주기는 √4 = 2배가 됩니다.",
+        no: "아래 주기 칸의 식 T = 2π√(m/k) 에 질량 4배를 넣어 보세요."
+      },
+      asks: [
+        { q: "변위가 최대인 순간과 평형점을 지나는 순간, 속도와 가속도의 크기는 각각 어떨까?",
+          a: "변위의 크기가 최대인 양 끝에서는 가속도의 크기가 최대이고 속도는 0 이다. 평형점에서는 가속도가 0 이고 속도의 크기가 최대이다. 오른쪽 그래프에서 x 가 최대인 순간 v 그래프가 0 을 지나는 것을 확인할 수 있다." },
+        { q: "용수철 상수가 100 N/m 인 용수철에 무게 20 N 인 물체를 매달아 연직 방향으로 단진동시켰다. 물체의 속력이 가장 빠를 때 용수철은 얼마나 늘어나 있을까?",
+          a: "속력은 알짜힘이 0 인 평형점에서 가장 빠르다. 평형점에서 kx₀ = mg 이므로 x₀ = 20 N ÷ 100 N/m = 0.2 m, 즉 20 cm 늘어나 있을 때이다." }
+      ]
+    },
+    shadow: {
+      name: "원운동의 그림자 (3D)",
+      cond: "공이 수평면에서 등속 원운동하고, 앞에서 비추는 빛 때문에 뒤쪽 벽에 그림자가 생긴다. 그림 속을 끌어 돌려 볼 수 있다.",
+      pred: {
+        q: "공이 원을 한 바퀴 도는 동안 벽의 그림자는 몇 번 왕복할까요?",
+        opts: ["반 번", "한 번", "두 번"], ans: 1,
+        wait: "공이 한 바퀴 돌 때까지 그림자를 지켜보세요.",
+        ok: "공이 한 바퀴 도는 동안 그림자는 한 번 왕복합니다. 그래서 원운동의 주기와 그림자의 단진동 주기는 같습니다.",
+        no: "공이 한 바퀴 도는 동안 그림자가 처음 위치로 몇 번 돌아오는지 다시 세어 보세요."
+      },
+      asks: [
+        { q: "그림자의 가속도와 변위 사이에는 어떤 관계가 있고, 왜 그림자는 단진동을 한다고 할 수 있을까?",
+          a: "그림자의 변위는 x = A cos ωt, 가속도는 a = −Aω² cos ωt 이므로 a = −ω²x 이다. 가속도의 크기가 변위의 크기에 비례하고 방향이 반대이므로 그림자는 단진동을 한다." },
+        { q: "단진동하는 물체의 가속도의 최댓값이 2 m/s², 변위의 최댓값이 4 m 일 때 진동 주기는 얼마일까?",
+          a: "가속도의 최댓값은 Aω² 이므로 ω² = 2 ÷ 4 = 0.5, ω = √0.5 ≈ 0.71 rad/s 이다. T = 2π/ω = 2π/√0.5 ≈ 8.9 s 이다." }
+      ]
+    }
+  };
+  var ORDER = ["spring", "shadow"];
+
+  /* 상태: x = A cos(ω t + φ) */
+  var S = {
+    spring: { m: 1, k: 10, A: 0.1, phi: 0, t: 0, samples: [], drag: false, elapsed: 0 },
+    shadow: { w: 3, A: 0.1, phi: 0, t: 0, samples: [], elapsed: 0 }
+  };
+  var view = "spring", playing = !still, simT = 0, moved = { m: false }, picks = {}, logRows = [];
+  var cam = { yaw: -0.62, pitch: 0.38 }, camTo = null;
+
+  function omega(id) { var s = S[id]; return id === "spring" ? Math.sqrt(s.k / s.m) : s.w; }
+  function kin(id) {
+    var s = S[id], w = omega(id), th = w * s.t + s.phi;
+    if (s.drag) return { x: s.dx, v: 0, a: -w * w * s.dx, th: 0, w: w };
+    var x = s.A * Math.cos(th);
+    return { x: x, v: -s.A * w * Math.sin(th), a: -w * w * x, th: th, w: w };
+  }
+  function period(id) { return 2 * Math.PI / omega(id); }
+  /* 조건이 바뀌어도 운동이 끊기지 않도록 지금의 x, v 에서 새 진폭과 위상을 구한다 */
+  function rebase(id, change) {
+    var s = S[id], k0 = kin(id);
+    change();
+    var w = omega(id);
+    s.A = Math.min(AMAX, Math.sqrt(k0.x * k0.x + (k0.v / w) * (k0.v / w)));
+    s.phi = Math.atan2(-k0.v / w, k0.x); s.t = 0;
+  }
+  function f2(n) { var r = n.toFixed(2); return r === "-0.00" ? "0.00" : r; }
+  function sg(n) { var r = f2(n); return r.charAt(0) === "-" ? "−" + r.slice(1) : r; }
+
+  /* ---------- 그림 공통 ---------- */
+  var col = {};
+  function colors() {
+    var cs = getComputedStyle(document.documentElement);
+    ["ink", "muted", "line", "accent", "surface", "bg", "mark", "inner", "heat", "accent-soft"].forEach(function (n) { col[n] = cs.getPropertyValue("--" + n).trim(); });
+    col.x = col.accent; col.v = col.mark; col.a = col.inner;
+  }
+  function fit(cv) {
+    var w = cv.clientWidth, h = cv.clientHeight, dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+    return { c: c, w: w, h: h };
+  }
+  function arrow(c, x1, y1, x2, y2, color, lw) {
+    var len = Math.hypot(x2 - x1, y2 - y1); if (len < 3) return;
+    var ang = Math.atan2(y2 - y1, x2 - x1), hd = Math.min(12, len * 0.6);
+    c.strokeStyle = color; c.fillStyle = color; c.lineWidth = lw || 4; c.lineCap = "round";
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(ang) * hd * 0.7, y2 - Math.sin(ang) * hd * 0.7); c.stroke();
+    c.beginPath(); c.moveTo(x2, y2);
+    c.lineTo(x2 - hd * Math.cos(ang - 0.5), y2 - hd * Math.sin(ang - 0.5));
+    c.lineTo(x2 - hd * Math.cos(ang + 0.5), y2 - hd * Math.sin(ang + 0.5));
+    c.closePath(); c.fill();
+  }
+  function spring2d(c, x1, x2, y, coils, amp) {
+    var n = coils * 2, lead = 10, L = x2 - x1 - lead * 2;
+    c.beginPath(); c.moveTo(x1, y); c.lineTo(x1 + lead, y);
+    for (var i = 1; i <= n; i++) c.lineTo(x1 + lead + L * (i - 0.5) / n, y + (i % 2 ? -amp : amp));
+    c.lineTo(x2 - lead, y); c.lineTo(x2, y); c.stroke();
+  }
+
+  /* ---------- 용수철 진자 (옆에서 본 그림) ---------- */
+  var geo = null;
+  function drawSpring() {
+    var f = fit($("scene")), c = f.c, w = f.w, h = f.h, s = S.spring, k = kin("spring");
+    var floor = h - 52, cx = w * 0.56, sc = (w * 0.36) / AMAX, bw = 66, bh = 54;
+    var bx = cx + k.x * sc;
+    geo = { cx: cx, sc: sc, bx: bx, bw: bw, top: floor - bh, floor: floor };
+    /* 바닥과 눈금 */
+    c.fillStyle = col.line; c.fillRect(10, floor, w - 20, 4);
+    c.fillStyle = col.ink; c.fillRect(10, 18, 10, floor - 18);
+    c.font = "13px " + FONT; c.fillStyle = col.muted; c.textAlign = "center"; c.textBaseline = "top";
+    c.strokeStyle = col.muted; c.lineWidth = 1;
+    for (var q = -0.2; q <= 0.2001; q += 0.05) {
+      var px = cx + q * sc; c.beginPath(); c.moveTo(px, floor + 6); c.lineTo(px, floor + (Math.abs(q * 20 % 2) < 0.01 ? 16 : 11)); c.stroke();
+      if (Math.abs(Math.round(q * 10) - q * 10) < 0.001) c.fillText((q > 0 ? "+" : q < 0 ? "−" : "") + Math.abs(q).toFixed(1), px, floor + 18);
+    }
+    c.textAlign = "right"; c.fillText("x (m)", w - 12, floor + 18);
+    /* 평형점 */
+    c.save(); c.setLineDash([5, 5]); c.strokeStyle = col.accent; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(cx, 22); c.lineTo(cx, floor); c.stroke(); c.restore();
+    c.font = "600 14px " + FONT; c.fillStyle = col.accent; c.textAlign = "center"; c.textBaseline = "alphabetic";
+    c.fillText("평형점 (x = 0)", cx, 16);
+    /* 용수철과 물체 */
+    c.strokeStyle = col.ink; c.lineWidth = 2.5; c.lineJoin = "round";
+    spring2d(c, 20, bx - bw / 2, floor - bh / 2, 12, 11);
+    c.fillStyle = col.accent; c.fillRect(bx - bw / 2, floor - bh, bw, bh);
+    c.fillStyle = col.surface; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "700 14px " + FONT;
+    c.fillText(s.m.toFixed(1) + " kg", bx, floor - bh / 2);
+    /* 화살표: 탄성력(= 가속도 방향), 속도 */
+    var w0 = omega("spring"), vmax = AMAX * w0, amax = AMAX * w0 * w0;
+    var ya = floor - bh - 18, yv = floor - bh - 44, L = w * 0.16;
+    c.font = "600 14px " + FONT; c.textBaseline = "middle";
+    if (Math.abs(k.a) > 1e-3) { arrow(c, bx, ya, bx + k.a / amax * L, ya, col.a, 4); c.fillStyle = col.a; c.textAlign = k.a > 0 ? "left" : "right"; c.fillText("F = −kx (a)", bx + k.a / amax * L + (k.a > 0 ? 8 : -8), ya); }
+    else { c.fillStyle = col.a; c.textAlign = "center"; c.fillText("F = 0", bx, ya); }
+    if (Math.abs(k.v) > 1e-3) { arrow(c, bx, yv, bx + k.v / vmax * L, yv, col.v, 4); c.fillStyle = col.v; c.textAlign = k.v > 0 ? "left" : "right"; c.fillText("v", bx + k.v / vmax * L + (k.v > 0 ? 8 : -8), yv); }
+    else { c.fillStyle = col.v; c.textAlign = "center"; c.fillText("v = 0", bx, yv); }
+  }
+
+  /* ---------- 원운동의 그림자 (3차원) ---------- */
+  var DEPTH = -1.5, CY = 1.25, TRACKZ = -1.2;
+  function project(p, w, h) {
+    var x = p[0], y = p[1] - 0.9, z = p[2] + 0.4;
+    var cyw = Math.cos(cam.yaw), syw = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), spi = Math.sin(cam.pitch);
+    var x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw;
+    var y2 = y * cp - z1 * spi, z2 = y * spi + z1 * cp;
+    var d = 8 - z2, f = Math.min(w, h * 1.6) * 2.1, s = f / d;
+    return [w / 2 + x1 * s, h / 2 - y2 * s, s];
+  }
+  function poly(c, pts, w, h, fill, stroke, lw) {
+    c.beginPath();
+    pts.forEach(function (p, i) { var q = project(p, w, h); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); });
+    c.closePath();
+    if (fill) { c.fillStyle = fill; c.fill(); }
+    if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw || 1; c.stroke(); }
+  }
+  function line3(c, a, b, w, h, color, lw, dash) {
+    var p = project(a, w, h), q = project(b, w, h);
+    c.save(); if (dash) c.setLineDash(dash);
+    c.strokeStyle = color; c.lineWidth = lw; c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.stroke(); c.restore();
+  }
+  function hull(pts) {
+    pts = pts.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    function cross(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }
+    var lo = [], up = [];
+    pts.forEach(function (p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); });
+    pts.slice().reverse().forEach(function (p) { while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); });
+    return lo.slice(0, -1).concat(up.slice(0, -1));
+  }
+  function drawShadow() {
+    var f = fit($("scene")), c = f.c, w = f.w, h = f.h, s = S.shadow, k = kin("shadow");
+    var R = s.A / AMAX * 1.6, bx = k.x / AMAX * 1.6, bz = -s.A * Math.sin(k.th) / AMAX * 1.6;
+    /* 바닥과 벽 */
+    poly(c, [[-2.6, 0, -1.5], [2.6, 0, -1.5], [2.6, 0, 1.6], [-2.6, 0, 1.6]], w, h, col.bg, col.line, 1);
+    poly(c, [[-2.6, 0, DEPTH], [2.6, 0, DEPTH], [2.6, 2.3, DEPTH], [-2.6, 2.3, DEPTH]], w, h, col["accent-soft"], col.line, 1.5);
+    for (var gx = -2; gx <= 2.01; gx += 1) line3(c, [gx, 0, -1.5], [gx, 0, 1.6], w, h, col.line, 1);
+    /* 벽 위 눈금: 그림자의 변위 */
+    line3(c, [-1.8, CY, DEPTH + 0.01], [1.8, CY, DEPTH + 0.01], w, h, col.muted, 1.5);
+    line3(c, [0, CY - 0.35, DEPTH + 0.01], [0, CY + 0.35, DEPTH + 0.01], w, h, col.accent, 1.5, [4, 4]);
+    [-1, 1].forEach(function (sn) { line3(c, [sn * R, CY - 0.15, DEPTH + 0.01], [sn * R, CY + 0.15, DEPTH + 0.01], w, h, col.muted, 2); });
+    var lbl = function (p, t, color, align) { var q = project(p, w, h); c.fillStyle = color; c.textAlign = align || "center"; c.fillText(t, q[0], q[1]); };
+    c.font = "600 14px " + FONT; c.textBaseline = "middle";
+    lbl([0, CY + 0.55, DEPTH], "평형점 O", col.accent);
+    lbl([R, CY - 0.32, DEPTH], "+A", col.muted); lbl([-R, CY - 0.32, DEPTH], "−A", col.muted);
+    lbl([-2.35, 2.1, DEPTH], "벽(스크린)", col.muted, "left");
+    /* 그림자 */
+    var sh = project([bx, CY, DEPTH + 0.01], w, h);
+    c.fillStyle = "rgba(27,31,39,0.55)"; c.beginPath(); c.arc(sh[0], sh[1], Math.max(4, 0.13 * sh[2]), 0, Math.PI * 2); c.fill();
+    lbl([bx, CY + 0.32, DEPTH], "그림자", col.ink);
+    /* 그림자 아래 용수철 진자 (같은 ω, 같은 진폭) */
+    var ty = 0.16;
+    line3(c, [-2.5, 0.001, TRACKZ - 0.2], [2.5, 0.001, TRACKZ - 0.2], w, h, col.line, 2);
+    poly(c, [[-2.55, 0, TRACKZ - 0.2], [-2.45, 0, TRACKZ - 0.2], [-2.45, 0.42, TRACKZ - 0.2], [-2.55, 0.42, TRACKZ - 0.2]], w, h, col.ink, null);
+    var sp = [], n = 24, x1 = -2.45, x2 = bx - 0.18;
+    for (var i = 0; i <= n; i++) { var xx = x1 + (x2 - x1) * i / n; sp.push([xx, ty + (i % 2 ? 0.06 : -0.06) * (i > 0 && i < n ? 1 : 0), TRACKZ]); }
+    c.strokeStyle = col.ink; c.lineWidth = 2; c.beginPath();
+    sp.forEach(function (p, i) { var q = project(p, w, h); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.stroke();
+    var cube = []; [-0.18, 0.18].forEach(function (dx) { [0, 0.34].forEach(function (dy) { [-0.18, 0.18].forEach(function (dz) { cube.push(project([bx + dx, dy, TRACKZ + dz], w, h)); }); }); });
+    var hb = hull(cube); c.fillStyle = col.accent; c.beginPath(); hb.forEach(function (q, i) { if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.closePath(); c.fill();
+    lbl([bx, 0.62, TRACKZ], "용수철 진자", col.accent);
+    /* 빛줄기 (앞에서 벽 쪽으로) */
+    for (var r = -1; r <= 1; r += 2) line3(c, [r * 2.2, CY, 1.55], [r * 2.2, CY, DEPTH + 0.2], w, h, col.mark, 1.5, [8, 6]);
+    var a1 = project([2.2, CY + 0.25, 1.4], w, h), a2 = project([2.2, CY + 0.25, 0.6], w, h);
+    arrow(c, a1[0], a1[1], a2[0], a2[1], col.mark, 3); lbl([2.2, CY + 0.55, 1.1], "빛", col.mark);
+    /* 원운동: 기둥, 원 궤도, 팔, 공 */
+    line3(c, [0, 0, 0], [0, CY, 0], w, h, col.muted, 4);
+    var ring = [];
+    for (var j = 0; j <= 64; j++) { var a = j / 64 * Math.PI * 2; ring.push([R * Math.cos(a), CY, -R * Math.sin(a)]); }
+    c.save(); c.setLineDash([6, 5]); c.strokeStyle = col.ink; c.lineWidth = 1.5; c.beginPath();
+    ring.forEach(function (p, i) { var q = project(p, w, h); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.stroke(); c.restore();
+    line3(c, [0, CY, 0], [bx, CY, bz], w, h, col.ink, 2.5);
+    line3(c, [bx, CY, bz], [bx, CY, DEPTH], w, h, col.muted, 1, [3, 4]);
+    var b = project([bx, CY, bz], w, h), br = Math.max(6, 0.15 * b[2]);
+    var g = c.createRadialGradient(b[0] - br * 0.35, b[1] - br * 0.35, br * 0.1, b[0], b[1], br);
+    g.addColorStop(0, "#ffffff"); g.addColorStop(1, col.heat);
+    c.fillStyle = g; c.beginPath(); c.arc(b[0], b[1], br, 0, Math.PI * 2); c.fill();
+    lbl([bx, CY + 0.4, bz], "등속 원운동", col.heat);
+  }
+
+  /* ---------- 그래프: x, v, a 를 세 줄로 ---------- */
+  function drawGraph() {
+    var f = fit($("graph")), c = f.c, w = f.w, h = f.h, s = S[view], wv = omega(view);
+    var rows = [
+      { key: "x", label: "변위 x (m)", max: AMAX, color: col.x },
+      { key: "v", label: "속도 v (m/s)", max: AMAX * wv, color: col.v },
+      { key: "a", label: "가속도 a (m/s²)", max: AMAX * wv * wv, color: col.a }
+    ];
+    var ml = 12, mr = 12, rh = (h - 30) / 3, now = simT;
+    function X(t) { return ml + (1 - (now - t) / WIN) * (w - ml - mr); }
+    rows.forEach(function (r, i) {
+      var top = 6 + i * rh, mid = top + rh / 2, half = rh / 2 - 14;
+      c.strokeStyle = col.line; c.lineWidth = 1; c.strokeRect(ml, top + 4, w - ml - mr, rh - 8);
+      c.strokeStyle = col.muted; c.beginPath(); c.moveTo(ml, mid); c.lineTo(w - mr, mid); c.stroke();
+      c.font = "600 14px " + FONT; c.fillStyle = r.color; c.textAlign = "left"; c.textBaseline = "top";
+      c.fillText(r.label, ml + 8, top + 8);
+      c.strokeStyle = r.color; c.lineWidth = 2.5; c.lineJoin = "round"; c.beginPath();
+      var started = false;
+      s.samples.forEach(function (p) {
+        if (now - p.t > WIN) return;
+        var y = mid - Math.max(-1.1, Math.min(1.1, p[r.key] / r.max)) * half;
+        if (started) c.lineTo(X(p.t), y); else { c.moveTo(X(p.t), y); started = true; }
+      });
+      c.stroke();
+      var kk = kin(view), y0 = mid - Math.max(-1.1, Math.min(1.1, kk[r.key] / r.max)) * half;
+      c.fillStyle = r.color; c.beginPath(); c.arc(X(now), y0, 5, 0, Math.PI * 2); c.fill();
+    });
+    c.fillStyle = col.muted; c.font = "13px " + FONT; c.textAlign = "right"; c.textBaseline = "bottom";
+    c.fillText("시간 → (최근 " + WIN + " 초)", w - mr, h - 4);
+  }
+
+  /* ---------- 숫자 칸 ---------- */
+  function setText(el, t) { if (el.textContent !== t) el.textContent = t; }
+  function setBar(id, val, max) {
+    var wd = Math.min(50, Math.abs(val) / max * 50), el = $(id);
+    el.style.width = wd + "%"; el.style.left = (val >= 0 ? 50 : 50 - wd) + "%";
+  }
+  function updateUI() {
+    var s = S[view], k = kin(view), wv = omega(view), T = period(view);
+    setText($("v-x"), sg(k.x) + " m"); setText($("v-v"), sg(k.v) + " m/s"); setText($("v-a"), sg(k.a) + " m/s²");
+    setBar("b-x", k.x, AMAX); setBar("b-v", k.v, AMAX * wv); setBar("b-a", k.a, AMAX * wv * wv);
+    var w2 = (wv * wv).toFixed(2);
+    if (view === "spring") {
+      setText($("n-extra"), "탄성력 F = −kx"); setText($("v-extra"), sg(-s.k * k.x) + " N"); setText($("m-extra"), "k = " + s.k + " N/m");
+      setText($("v-rel"), "a = −(k/m)x = −" + w2 + " × x");
+      setText($("v-t"), T.toFixed(2) + " s"); setText($("m-t"), "T = 2π√(m/k) = 2π√(" + s.m.toFixed(1) + "/" + s.k + ")");
+      var where = s.drag ? "물체를 당기는 중" : Math.abs(k.x) < 0.006 ? "평형점을 지나는 중 — 속력 최대" : Math.abs(Math.abs(k.x) - s.A) < 0.004 ? "끝점 — 잠깐 멈춤, 가속도 최대" : k.x * k.v < 0 ? "평형점 쪽으로 — 빨라지는 중" : "끝 쪽으로 — 느려지는 중";
+      setText($("status"), "용수철 진자 · " + where);
+    } else {
+      var deg = ((k.th * 180 / Math.PI) % 360 + 360) % 360;
+      setText($("n-extra"), "회전한 각 θ = ωt"); setText($("v-extra"), deg.toFixed(0) + "°"); setText($("m-extra"), "ω = " + s.w.toFixed(1) + " rad/s");
+      setText($("v-rel"), "a = −ω²x = −" + w2 + " × x");
+      setText($("v-t"), T.toFixed(2) + " s"); setText($("m-t"), "T = 2π/ω = 2π/" + s.w.toFixed(1) + " (원운동 주기 = 그림자 주기)");
+      setText($("status"), "원운동의 그림자 · 그림자 x = A cos ωt");
+    }
+    setText($("btn-play"), playing ? "⏸ 멈춤" : "▶ 재생");
+    updatePred();
+  }
+
+  /* ---------- 조작부 ---------- */
+  function slider(parent, id, label, min, max, step, val, fmt, on, onDone) {
+    var wrap = document.createElement("div"), head = document.createElement("div"), lb = document.createElement("label"), o = document.createElement("span"), inp = document.createElement("input");
+    head.className = "slider-head"; lb.htmlFor = id; lb.textContent = label; o.className = "num";
+    inp.type = "range"; inp.id = id; inp.min = min; inp.max = max; inp.step = step; inp.value = val;
+    head.appendChild(lb); head.appendChild(o); wrap.appendChild(head); wrap.appendChild(inp); parent.appendChild(wrap);
+    o.textContent = fmt(val);
+    inp.addEventListener("input", function () { var v = parseFloat(inp.value); o.textContent = fmt(v); on(v); updateUI(); });
+    inp.addEventListener("change", function () { if (onDone) onDone(); });
+  }
+  function renderCtls() {
+    var box = $("ctls"); box.textContent = "";
+    if (view === "spring") {
+      var s = S.spring;
+      slider(box, "c-m", "질량 m", 0.5, 4, 0.5, s.m, function (v) { return v.toFixed(1) + " kg"; }, function (v) { rebase("spring", function () { s.m = v; }); moved.m = true; }, function () { addLog(false); });
+      slider(box, "c-k", "용수철 상수 k", 5, 40, 5, s.k, function (v) { return v + " N/m"; }, function (v) { rebase("spring", function () { s.k = v; }); }, function () { addLog(false); });
+      slider(box, "c-a", "처음 당긴 거리 (진폭 A)", 0.05, 0.2, 0.01, s.A, function (v) { return v.toFixed(2) + " m"; }, function (v) { s.A = v; s.phi = 0; s.t = 0; }, function () { addLog(false); });
+    } else {
+      var h = S.shadow;
+      slider(box, "c-r", "원의 반지름 (진폭 A)", 0.05, 0.2, 0.01, h.A, function (v) { return v.toFixed(2) + " m"; }, function (v) { h.A = v; }, function () { addLog(false); });
+      slider(box, "c-w", "각속도 ω", 1, 6, 0.5, h.w, function (v) { return v.toFixed(1) + " rad/s"; }, function (v) { var th = kin("shadow").th; h.w = v; h.phi = th; h.t = 0; }, function () { addLog(false); });
+    }
+  }
+
+  /* ---------- 활동 ---------- */
+  function renderCases() {
+    var box = $("cases"); box.textContent = "";
+    ORDER.concat(["sum"]).forEach(function (id) {
+      var b = document.createElement("button"); b.type = "button"; b.id = "case-" + id; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(view === id)); b.textContent = id === "sum" ? "한눈에 정리" : CASES[id].name;
+      b.addEventListener("click", function () { go(id); }); box.appendChild(b);
+    });
+  }
+  function renderPred() {
+    var pr = CASES[view].pred, box = $("pred-opts"); $("pred-q").textContent = pr.q; box.textContent = "";
+    pr.opts.forEach(function (o, i) {
+      var b = document.createElement("button"); b.type = "button"; b.textContent = o; b.setAttribute("aria-pressed", String(picks[view] === i));
+      b.addEventListener("click", function () { picks[view] = i; renderPred(); updatePred(); }); box.appendChild(b);
+    });
+  }
+  function predReady() { return view === "spring" ? moved.m : S.shadow.elapsed >= period("shadow"); }
+  function updatePred() {
+    if (view === "sum") return;
+    var pr = CASES[view].pred, pk = picks[view], m;
+    if (pk === undefined) m = "먼저 예상을 골라 주세요.";
+    else if (!predReady()) m = pr.wait;
+    else m = pk === pr.ans ? "예상과 같습니다. " + pr.ok : "예상과 다릅니다. " + pr.no;
+    setText($("pred-msg"), m);
+  }
+  function renderAsks() {
+    var ol = $("asks"); ol.textContent = "";
+    CASES[view].asks.forEach(function (t) {
+      var li = document.createElement("li"), q = document.createElement("div"), d = document.createElement("details"), sm = document.createElement("summary"), a = document.createElement("p");
+      q.textContent = t.q; sm.textContent = "정답 보기"; a.textContent = t.a; d.className = "answer";
+      d.appendChild(sm); d.appendChild(a); li.appendChild(q); li.appendChild(d); ol.appendChild(li);
+    });
+  }
+  function addLog(force) {
+    var s = S[view], wv = omega(view), A = s.A;
+    var cond = view === "spring" ? "m = " + s.m.toFixed(1) + " kg, k = " + s.k + " N/m" : "ω = " + s.w.toFixed(1) + " rad/s";
+    var row = [CASES[view].name, cond, A.toFixed(2), period(view).toFixed(2), (A * wv).toFixed(2), (A * wv * wv).toFixed(2)];
+    var key = row.join("|");
+    if (!force && logRows.some(function (r) { return r.join("|") === key; })) return;
+    logRows.push(row); renderLog();
+  }
+  function renderLog() {
+    var b = $("log-body"); b.textContent = "";
+    $("log-title").textContent = logRows.length ? "기록 (" + logRows.length + ")" : "기록";
+    if (!logRows.length) {
+      var r = document.createElement("tr"), td = document.createElement("td"); td.colSpan = 7; td.textContent = "아직 기록이 없습니다.";
+      td.style.textAlign = "left"; td.style.color = "var(--muted)"; r.appendChild(td); b.appendChild(r); return;
+    }
+    logRows.forEach(function (row, i) {
+      var r = document.createElement("tr");
+      [i + 1].concat(row).forEach(function (x) { var td = document.createElement("td"); td.textContent = x; r.appendChild(td); });
+      b.appendChild(r);
+    });
+  }
+
+  /* ---------- 한눈에 정리 ---------- */
+  var picked = null;
+  function renderSummary() {
+    var W = 440, H = 300, ml = 20, mr = 16, mt = 36, gh = 210, gw = W - ml - mr, mid = mt + gh / 2, amp = gh / 2 - 12;
+    var colorOf = { x: "var(--x)", v: "var(--v)", a: "var(--a)" };
+    var fn = { x: function (u) { return Math.cos(u); }, v: function (u) { return -Math.sin(u); }, a: function (u) { return -Math.cos(u); } };
+    var names = { x: "변위 x", v: "속도 v", a: "가속도 a" };
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="한 주기 동안 변위, 속도, 가속도 그래프" font-size="14">' +
+      '<path d="M' + ml + ' ' + mid + 'H' + (W - mr) + '" stroke="var(--muted)" stroke-width="1.5"/>';
+    var marks = [["0", "끝 +A"], ["T/4", "평형점"], ["T/2", "끝 −A"], ["3T/4", "평형점"], ["T", "끝 +A"]];
+    marks.forEach(function (m, i) {
+      var x = ml + gw * i / 4;
+      s += '<path d="M' + x + ' ' + mt + 'V' + (mt + gh) + '" stroke="var(--line)" stroke-width="1"/>' +
+        '<text x="' + x + '" y="' + (mt + gh + 18) + '" text-anchor="' + (i === 0 ? "start" : i === 4 ? "end" : "middle") + '" fill="var(--muted)">' + m[0] + '</text>' +
+        '<text x="' + x + '" y="' + (mt - 12) + '" text-anchor="' + (i === 0 ? "start" : i === 4 ? "end" : "middle") + '" fill="var(--muted)" font-size="13">' + m[1] + '</text>';
+    });
+    ["x", "v", "a"].forEach(function (key, ki) {
+      var d = "";
+      for (var i = 0; i <= 80; i++) { var u = i / 80 * Math.PI * 2; d += (i ? "L" : "M") + (ml + gw * i / 80).toFixed(1) + " " + (mid - fn[key](u) * amp).toFixed(1); }
+      var lx = ml + gw * [0.06, 0.2, 0.06][ki], ly = mid - fn[key]([0.06, 0.2, 0.06][ki] * Math.PI * 2) * amp + [-10, 18, 18][ki];
+      s += '<g class="sg" data-id="' + key + '" tabindex="0" role="button" aria-label="' + names[key] + ' 강조">' +
+        '<path d="' + d + '" fill="none" stroke="transparent" stroke-width="18"/>' +
+        '<path d="' + d + '" fill="none" stroke="' + colorOf[key] + '" stroke-width="3.5"/>' +
+        '<text x="' + lx + '" y="' + ly + '" font-weight="700" fill="' + colorOf[key] + '">' + names[key] + '</text></g>';
+    });
+    s += '<text x="' + (W - mr) + '" y="' + (H - 6) + '" text-anchor="end" fill="var(--muted)">시간</text></svg>';
+    $("sum-graph").innerHTML = s;
+
+    var rows = $("sum-rows"), cards = $("sum-cards"); rows.textContent = ""; cards.textContent = "";
+    [["x", "변위 x", "A cos ωt", "A", "0", "최대 (±A)"],
+     ["v", "속도 v", "−Aω sin ωt", "Aω", "최대 (속력 Aω)", "0"],
+     ["a", "가속도 a", "−Aω² cos ωt = −ω²x", "Aω²", "0", "최대 (변위와 반대 방향)"]].forEach(function (r) {
+      var tr = document.createElement("tr"); tr.setAttribute("data-id", r[0]); tr.tabIndex = 0;
+      r.slice(1).forEach(function (x) { var td = document.createElement("td"); td.textContent = x; tr.appendChild(td); });
+      rows.appendChild(tr);
+    });
+    [["spring", "T = 2π√(m/k)", "용수철의 탄성력 F = −kx 때문에 a = −(k/m)x 가 되어 단진동한다. 주기는 질량이 클수록, 용수철 상수가 작을수록 길고, 진폭과는 관계없다."],
+     ["shadow", "T = 2π/ω", "등속 원운동하는 물체의 그림자는 x = A cos ωt 로 움직여 a = −ω²x 인 단진동을 한다. 원운동의 주기와 그림자의 주기는 같다."]].forEach(function (cd) {
+      var card = document.createElement("section"); card.className = "panel sum-card";
+      var h = document.createElement("h2"); h.textContent = CASES[cd[0]].name; card.appendChild(h);
+      var big = document.createElement("p"); big.className = "big"; big.textContent = cd[1]; card.appendChild(big);
+      var p = document.createElement("p"); p.textContent = cd[2]; card.appendChild(p);
+      var bt = document.createElement("button"); bt.type = "button"; bt.className = "btn"; bt.id = "go-" + cd[0]; bt.textContent = CASES[cd[0]].name + " 탐구하기";
+      bt.addEventListener("click", function () { go(cd[0]); }); card.appendChild(bt);
+      cards.appendChild(card);
+    });
+    var top = document.querySelector(".sum-top"), marksEl = top.querySelectorAll("[data-id]");
+    function apply() {
+      top.classList.toggle("has-pick", picked !== null);
+      Array.prototype.forEach.call(marksEl, function (m) { m.classList.toggle("on", m.getAttribute("data-id") === picked); });
+    }
+    Array.prototype.forEach.call(marksEl, function (m) {
+      function pick() { picked = picked === m.getAttribute("data-id") ? null : m.getAttribute("data-id"); apply(); }
+      m.addEventListener("click", pick);
+      m.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+    });
+    apply();
+  }
+
+  function go(id) {
+    view = id;
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* 파일로 열 때 */ }
+    $("lab").hidden = id === "sum"; $("summary").hidden = id !== "sum";
+    renderCases();
+    if (id === "sum") { renderSummary(); window.scrollTo(0, 0); return; }
+    $("cond").textContent = CASES[id].cond;
+    $("views").hidden = id !== "shadow";
+    $("scene").setAttribute("aria-label", id === "spring" ? "용수철에 매달린 물체가 평형점을 중심으로 왕복하는 그림" : "등속 원운동하는 공과 벽에 생긴 그림자, 그 아래 용수철 진자를 3차원으로 그린 그림");
+    renderCtls(); renderPred(); renderAsks(); updateUI();
+    window.scrollTo(0, 0);
+  }
+
+  /* 용수철 진자: 물체를 직접 끌기 / 3D: 끌어서 돌려 보기 */
+  var scene = $("scene"), dragging = null, lastP = null;
+  scene.addEventListener("pointerdown", function (e) {
+    var r = scene.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    if (view === "spring" && geo && Math.abs(x - geo.bx) < geo.bw / 2 + 10 && y > geo.top - 10 && y < geo.floor + 6) {
+      dragging = "block"; S.spring.drag = true; S.spring.dx = kin("spring").x;
+    } else if (view === "shadow") { dragging = "cam"; lastP = [e.clientX, e.clientY]; camTo = null; }
+    else return;
+    scene.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  scene.addEventListener("pointermove", function (e) {
+    if (dragging === "block") {
+      var r = scene.getBoundingClientRect();
+      S.spring.dx = Math.max(-AMAX, Math.min(AMAX, (e.clientX - r.left - geo.cx) / geo.sc));
+    } else if (dragging === "cam") {
+      cam.yaw += (e.clientX - lastP[0]) * 0.008; cam.pitch = Math.max(-0.05, Math.min(1.5, cam.pitch + (e.clientY - lastP[1]) * 0.006));
+      lastP = [e.clientX, e.clientY];
+    } else if (view === "spring" && geo) {
+      var rr = scene.getBoundingClientRect();
+      scene.style.cursor = Math.abs(e.clientX - rr.left - geo.bx) < geo.bw / 2 + 10 ? "grab" : "";
+    } else if (view === "shadow") scene.style.cursor = "grab";
+  });
+  function endDrag() {
+    if (dragging === "block") {
+      var s = S.spring; s.drag = false;
+      if (Math.abs(s.dx) < 0.005) s.dx = 0;
+      s.A = Math.abs(s.dx); s.phi = s.dx < 0 ? Math.PI : 0; s.t = 0; playing = true;
+      var ca = $("c-a"); if (ca) { ca.value = Math.max(0.05, s.A); ca.dispatchEvent(new Event("input")); s.A = Math.abs(s.dx); s.phi = s.dx < 0 ? Math.PI : 0; s.t = 0; }
+      addLog(false);
+    }
+    dragging = null;
+  }
+  scene.addEventListener("pointerup", endDrag); scene.addEventListener("pointercancel", endDrag);
+  $("cam-side").addEventListener("click", function () { camTo = { yaw: -0.62, pitch: 0.38 }; });
+  $("cam-front").addEventListener("click", function () { camTo = { yaw: 0, pitch: 0 }; });
+  $("cam-top").addEventListener("click", function () { camTo = { yaw: 0, pitch: 1.5 }; });
+  $("btn-play").addEventListener("click", function () { playing = !playing; updateUI(); });
+  $("btn-reset").addEventListener("click", function () { var s = S[view]; s.t = 0; s.phi = 0; s.samples = []; updateUI(); });
+  $("log-now").addEventListener("click", function () { addLog(true); });
+  Array.prototype.forEach.call($("acts").children, function (b) {
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call($("acts").children, function (o) {
+        o.setAttribute("aria-selected", String(o === b));
+        $("act-" + o.getAttribute("data-act")).hidden = o !== b;
+      });
+    });
+  });
+
+  var last = 0, uiT = 0;
+  function frame(ms) {
+    var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms;
+    if (view !== "sum") {
+      var s = S[view];
+      if (playing && !s.drag) { s.t += dt; s.elapsed += dt; simT += dt; }
+      else if (s.drag) simT += dt;
+      if (playing || s.drag) {
+        var k = kin(view); s.samples.push({ t: simT, x: k.x, v: k.v, a: k.a });
+        while (s.samples.length && simT - s.samples[0].t > WIN + 0.5) s.samples.shift();
+      }
+      if (camTo) {
+        var e = still ? 1 : Math.min(1, dt * 4);
+        cam.yaw += (camTo.yaw - cam.yaw) * e; cam.pitch += (camTo.pitch - cam.pitch) * e;
+        if (Math.abs(camTo.yaw - cam.yaw) + Math.abs(camTo.pitch - cam.pitch) < 0.002) camTo = null;
+      }
+      colors();
+      if (view === "spring") drawSpring(); else drawShadow();
+      drawGraph();
+      uiT += dt; if (uiT > 0.08 || !playing) { uiT = 0; updateUI(); }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  colors(); renderLog();
+  var h0 = location.hash.replace("#", "");
+  go(CASES[h0] || h0 === "sum" ? h0 : "spring");
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

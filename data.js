@@ -46,6 +46,9 @@ window.SITE = {
       desc: "잉크·공 옮기기·주사위·열의 이동으로 비가역 현상과 엔트로피 탐구", added: "2026-11-05" },
     { title: "열기관 탐구", type: "sim", subject: "mechanics", lesson: "II-2-01",
       href: "sims/heat-engine.html", thumb: "assets/thumbs/heat-engine.svg",
-      desc: "카르노 기관과 스털링 기관이 작동하는 모습과 순환 과정, 열효율 비교", added: "2026-11-06" }
+      desc: "카르노 기관과 스털링 기관이 작동하는 모습과 순환 과정, 열효율 비교", added: "2026-11-06" },
+    { title: "단진동 탐구", type: "sim", subject: "mechanics", lesson: "III-1-01",
+      href: "sims/shm.html", thumb: "assets/thumbs/shm.svg",
+      desc: "용수철 진자의 단진동과, 등속 원운동의 그림자가 단진동함을 3차원으로 관찰", added: "2026-11-10" }
   ]
 };
