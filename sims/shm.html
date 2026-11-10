@@ -14,6 +14,8 @@
 .cols { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
 @media (max-width: 56rem) { .cols { grid-template-columns: minmax(0, 1fr); } }
 #scene { aspect-ratio: 16 / 9; touch-action: pan-y; }
+#scene.tall { aspect-ratio: 16 / 10; }
+@media (max-width: 40rem) { #scene.tall { aspect-ratio: 4 / 5; } }
 #graph { aspect-ratio: 4 / 3.6; }
 .caption { margin: 0; min-height: 3.2em; padding: 0.625rem 0.875rem; background: var(--accent-soft); border-radius: 10px; font-size: clamp(1rem, 2vw, 1.1875rem); font-weight: 600; line-height: 1.5; }
 .bar { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
@@ -333,7 +335,7 @@
   }
   function drawVertical() {
     var f = fit($("scene")), c = f.c, w = f.w, h = f.h, s = S.vertical, k = kin("vertical"), wv = wVert(), x0 = x0Vert();
-    var P = (h - 70) / (VL0 + 2 * G / 10 + VAMAX + 0.75), top = 22, bs = 46, cx = s.cmp ? w * 0.27 : w * 0.4;
+    var narrow = w < 500, P = (h - 70) / (VL0 + 2 * G / 10 + VAMAX + 0.75), top = 22, bs = 46, cx = s.cmp ? w * 0.27 : narrow ? w * 0.42 : w * 0.4;
     var natC = top + VL0 * P + bs / 2, eqC = natC + x0 * P, cy = eqC - k.x * P, by = cy - bs / 2;
     vgeo = { cx: cx, cy: cy, bs: bs, eqC: eqC, P: P };
     /* 천장 */
@@ -345,8 +347,8 @@
     c.save(); c.setLineDash([5, 5]); c.lineWidth = 1.5;
     c.strokeStyle = col.muted; c.beginPath(); c.moveTo(lx1, natC); c.lineTo(lx2, natC); c.stroke();
     c.strokeStyle = col.accent; c.lineWidth = 2; c.beginPath(); c.moveTo(lx1, eqC); c.lineTo(s.cmp ? w - 14 : lx2, eqC); c.stroke(); c.restore();
-    text(c, "용수철 원래 길이", lx1, natC - 12, col.muted, "left", 14, 600);
-    text(c, "평형점 (탄성력 = 중력)", lx1, eqC - 12, col.accent, "left", 14, 700);
+    text(c, narrow ? "원래 길이" : "용수철 원래 길이", lx1, natC - 12, col.muted, "left", 14, 600);
+    text(c, narrow ? "평형점" : "평형점 (탄성력 = 중력)", lx1, eqC - 12, col.accent, "left", 14, 700);
     var A = s.drag ? Math.abs(s.dx) : s.A;
     if (A > 0.02) [-1, 1].forEach(function (sn) {
       var py = eqC - sn * A * P;
@@ -370,11 +372,11 @@
     var am = VAMAX * wv * wv, vm = VAMAX * wv, L = Math.min(90, h * 0.24);
     if (s.showA) {
       var ax = cx + bs / 2 + 30;
-      if (Math.abs(k.a) > am * 0.03) { arrow(c, ax, cy, ax, cy - k.a / am * L, col.a, 5); text(c, "알짜힘·가속도", ax + 8, cy - k.a / am * L, col.a, "left", 14, 700); }
+      if (Math.abs(k.a) > am * 0.03) { arrow(c, ax, cy, ax, cy - k.a / am * L, col.a, 5); text(c, narrow ? "알짜힘" : "알짜힘·가속도", ax + 8, cy - k.a / am * L, col.a, "left", 14, 700); }
       else text(c, "알짜힘 0", ax - 6, cy, col.a, "left", 14, 700);
     }
     if (s.showV) {
-      var vx = cx + bs / 2 + (s.showA ? 140 : 30);
+      var vx = cx + bs / 2 + (s.showA ? (narrow ? 100 : 140) : 30);
       var vleft = s.cmp; if (vleft) vx = cx - bs / 2 - 80;
       if (Math.abs(k.v) > vm * 0.03) { arrow(c, vx, cy, vx, cy - k.v / vm * L, col.v, 5); text(c, "속도", vx + (vleft ? -8 : 8), cy - k.v / vm * L, col.v, vleft ? "right" : "left", 14, 700); }
       else text(c, "속도 0", vx, cy + 20, col.v, "center", 14, 700);
@@ -616,6 +618,7 @@
     renderTabs();
     if (id === "sum") { renderSummary(); return; }
     $("scene").setAttribute("aria-label", { spring: "용수철에 매달린 물체가 평형점을 중심으로 왕복하는 그림", vertical: "천장에 매단 용수철 아래 물체가 평형점을 중심으로 위아래로 진동하는 그림", compare: "조건이 다른 두 용수철 진자가 나란히 왕복하는 그림", shadow: "등속 원운동하는 공과 벽에 생긴 그림자, 그 아래 용수철 진자를 3차원으로 그린 그림" }[id]);
+    $("scene").classList.toggle("tall", id === "vertical");
     if (id === "compare") S.compare.t = 0;
     playing = false; /* 탭에 들어오면 재생 버튼을 눌러야 시작 */
     renderCtls(); updateCaption();
