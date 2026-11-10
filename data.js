@@ -49,6 +49,6 @@ window.SITE = {
       desc: "카르노 기관과 스털링 기관이 작동하는 모습과 순환 과정, 열효율 비교", added: "2026-11-06" },
     { title: "단진동 탐구", type: "sim", subject: "mechanics", lesson: "III-1-01",
       href: "sims/shm.html", thumb: "assets/thumbs/shm.svg",
-      desc: "용수철 진자의 단진동과, 등속 원운동의 그림자가 단진동함을 3차원으로 관찰", added: "2026-11-10" }
+      desc: "수업 시연용: 용수철 진자, 주기 비교, 등속 원운동의 그림자(3D)를 그림과 화살표로", added: "2026-11-10" }
   ]
 };
