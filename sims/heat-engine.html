@@ -118,7 +118,7 @@
           <input id="phase" type="range" min="0" max="400" step="1" value="0">
         </div>
         <div class="btn-row">
-          <button class="btn primary" type="button" id="btn-play">⏸ 멈춤</button>
+          <button class="btn primary" type="button" id="btn-play">▶ 재생</button>
           <button class="btn" type="button" id="btn-step">다음 과정 ▶</button>
           <button class="btn" type="button" id="btn-reset">처음으로</button>
         </div>
@@ -259,7 +259,7 @@
   var ORDER = ["carnot", "stirling"];
   var VERT = ["a", "b", "c", "d"];
 
-  var T1 = 600, T2 = 300, p = 0, playing = !still, view = "carnot", cycles = { carnot: 0, stirling: 0 };
+  var T1 = 600, T2 = 300, p = 0, playing = false, view = "carnot", cycles = { carnot: 0, stirling: 0 };
   var moved = { t1: false }, picks = {}, logRows = [];
 
   /* ---------- 계산 (nR = 1 J/K, 부피 단위 ×10⁻³ m³) ---------- */
@@ -625,7 +625,7 @@
     renderCases();
     if (id === "sum") { renderSummary(); window.scrollTo(0, 0); return; }
     $("cond").textContent = ENG[id].cond;
-    p = 0; cylX = null; lastKey = "";
+    p = 0; cylX = null; lastKey = ""; playing = false; /* 탭에 들어오면 재생 버튼을 눌러야 시작 */
     renderPred(); renderAsks(); updateUI();
     window.scrollTo(0, 0);
   }

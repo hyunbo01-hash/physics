@@ -53,7 +53,7 @@
         <p class="caption" id="caption" aria-live="polite"></p>
         <div class="bar">
           <div class="group">
-            <button class="btn primary" type="button" id="btn-play">⏸ 멈춤</button>
+            <button class="btn primary" type="button" id="btn-play">▶ 재생</button>
             <button class="btn" type="button" id="btn-reset">처음으로</button>
             <button class="tog" type="button" id="btn-slow" aria-pressed="false">느리게</button>
           </div>
@@ -113,7 +113,7 @@
     compare: { mode: "m", t: 0 },
     shadow: { A: 0.16, w: 1.6, t: 0, showV: true, showA: true }
   };
-  var view = "spring", playing = !still, slow = false;
+  var view = "spring", playing = false, slow = false;
   var cam = { yaw: -0.62, pitch: 0.38 }, camTo = null;
 
   function kinOf(A, w, t, phi) {
@@ -416,7 +416,7 @@
       $("g-title").textContent = "변위·속도·가속도";
       $("g-legend").textContent = "점선 세로선 = 지금 이 순간. 세 그래프를 같은 순간끼리 비교해 보세요. 물체를 끌어 당겼다가 놓을 수 있습니다.";
     } else if (view === "compare") {
-      choice(box, "무엇을 다르게 할까", [["m", "질량"], ["k", "용수철"], ["amp", "당긴 거리"]], S.compare.mode, function (m) { S.compare.mode = m; S.compare.t = 0; playing = true; });
+      choice(box, "무엇을 다르게 할까", [["m", "질량"], ["k", "용수철"], ["amp", "당긴 거리"]], S.compare.mode, function (m) { S.compare.mode = m; S.compare.t = 0; playing = false; });
       $("g-title").textContent = "A와 B의 변위";
       $("g-legend").textContent = "점선 = 한 번 왕복이 끝난 순간. 「처음으로」를 누르면 둘이 다시 동시에 출발합니다.";
     } else {
@@ -508,7 +508,7 @@
     if (id === "sum") { renderSummary(); return; }
     $("scene").setAttribute("aria-label", { spring: "용수철에 매달린 물체가 평형점을 중심으로 왕복하는 그림", compare: "조건이 다른 두 용수철 진자가 나란히 왕복하는 그림", shadow: "등속 원운동하는 공과 벽에 생긴 그림자, 그 아래 용수철 진자를 3차원으로 그린 그림" }[id]);
     if (id === "compare") S.compare.t = 0;
-    playing = !still;
+    playing = false; /* 탭에 들어오면 재생 버튼을 눌러야 시작 */
     renderCtls(); updateCaption();
   }
 
@@ -547,7 +547,7 @@
     if (view === "spring") { var s = S.spring; s.t = 0; s.phi = 0; if (s.A < 0.01) s.A = 0.14; }
     else if (view === "compare") S.compare.t = 0;
     else S.shadow.t = 0;
-    playing = true; updateCaption();
+    playing = false; updateCaption();
   });
 
   var last = 0, uiT = 0;
