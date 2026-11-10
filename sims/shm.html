@@ -462,11 +462,11 @@
     if (view === "spring") {
       var s = S.spring;
       if (s.drag) t = "물체를 당기면 용수철은 반대 방향으로 물체를 당긴다(탄성력). 많이 당길수록 힘이 크다. 놓으면 진동을 시작한다.";
-      else { var k = kin("spring"); t = (s.A > 0.004 ? sceneLetter(k.th) : "") + describe(k, s.A, "물체"); }
+      else { var k = kin("spring"); t = (s.A > 0.004 ? sceneLetter(k.th - s.phi) : "") + describe(k, s.A, "물체"); }
     } else if (view === "vertical") {
       var sv = S.vertical;
       if (sv.drag) t = "물체를 아래로 당기면 용수철이 더 늘어나 탄성력이 중력보다 커진다. 놓으면 평형점을 중심으로 위아래로 진동한다.";
-      else t = (sv.A > 0.02 ? sceneLetter(kin("vertical").th) : "") + describeVert(kin("vertical"), sv.A);
+      else t = (sv.A > 0.02 ? sceneLetter(kin("vertical").th - sv.phi) : "") + describeVert(kin("vertical"), sv.A);
     } else if (view === "compare") {
       var p = PAIRS[S.compare.mode], Tl = Math.max(TAU / Math.sqrt(p.A.k / p.A.m), TAU / Math.sqrt(p.B.k / p.B.m));
       t = S.compare.t < 2 * Tl ? "A와 B가 동시에 출발했다. 어느 쪽이 먼저 한 번 왕복하는지 지켜보세요." : p.hint;
