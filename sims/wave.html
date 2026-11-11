@@ -98,8 +98,9 @@
 
   /* 흔드는 쪽 끝(x = 0)의 변위: 시간 τ 의 함수 */
   function src(tau) {
-    if (st.mode === "pulse") return st.sign * Math.exp(-Math.pow((tau - 0.7) / 0.22, 2));
-    return tau > 0 ? Math.sin(TAU * 1.1 * tau) * Math.min(1, tau / 0.4) : 0;
+    /* 자유단·정상파에서 변위가 두 배까지 커져도 화면 안에 들어오도록 진폭을 줄여 둔다 */
+    if (st.mode === "pulse") return 0.6 * st.sign * Math.exp(-Math.pow((tau - 0.7) / 0.22, 2));
+    return tau > 0 ? 0.45 * Math.sin(TAU * 1.1 * tau) * Math.min(1, tau / 0.4) : 0;
   }
   function speeds() { return st.dir === "thin2thick" ? [V_THIN, V_THICK] : [V_THICK, V_THIN]; }
   /* 위치 x, 시간 t 에서 입사파·반사파·투과파의 변위 */
@@ -142,7 +143,7 @@
     c.save(); c.setLineDash([5, 6]); c.strokeStyle = col.line; c.lineWidth = 1.5;
     c.beginPath(); c.moveTo(ml, mid); c.lineTo(w, mid); c.stroke(); c.restore();
     /* 흔드는 쪽 끝 */
-    c.strokeStyle = col.muted; c.lineWidth = 2; c.beginPath(); c.moveTo(ml - 18, Y(1.1)); c.lineTo(ml - 18, Y(-1.1)); c.stroke();
+    c.strokeStyle = col.muted; c.lineWidth = 2; c.beginPath(); c.moveTo(ml - 18, Y(0.8)); c.lineTo(ml - 18, Y(-0.8)); c.stroke();
     var y0 = Y(src(t));
     c.fillStyle = col.ink; c.fillRect(ml - 26, y0 - 9, 16, 18); c.beginPath(); c.moveTo(ml - 10, y0); c.lineTo(ml, y0); c.strokeStyle = col.ink; c.lineWidth = 3; c.stroke();
     text(c, "흔드는 곳", ml - 18, h - 14, col.muted, "left", 14, 600);
