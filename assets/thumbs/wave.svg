@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="줄을 따라 진행하는 펄스가 벽에서 뒤집혀 반사하는 그림과 굵기가 다른 줄의 경계">
+  <rect width="320" height="180" fill="#eef1fb"/>
+  <text x="160" y="24" text-anchor="middle" font-family="'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif" font-size="15" font-weight="700" fill="#1b1f27">반사와 투과</text>
+
+  <!-- 고정단 반사 -->
+  <line x1="20" y1="78" x2="290" y2="78" stroke="#626a77" stroke-width="2"/>
+  <rect x="290" y="46" width="8" height="64" fill="#1b1f27"/>
+  <path d="M60 78C76 78 80 46 92 46S108 78 124 78" fill="none" stroke="#3453d1" stroke-width="3.5"/>
+  <path d="M132 58h22" stroke="#3453d1" stroke-width="3"/><path d="M162 58l-9-6v12z" fill="#3453d1"/>
+  <path d="M200 78C216 78 220 110 232 110S248 78 264 78" fill="none" stroke="#b45309" stroke-width="3.5"/>
+  <path d="M220 100h-22" stroke="#b45309" stroke-width="3"/><path d="M190 100l9-6v12z" fill="#b45309"/>
+
+  <!-- 굵기가 다른 줄 -->
+  <line x1="20" y1="148" x2="160" y2="148" stroke="#626a77" stroke-width="2"/>
+  <line x1="160" y1="148" x2="300" y2="148" stroke="#626a77" stroke-width="7"/>
+  <circle cx="160" cy="148" r="4" fill="#1b1f27"/>
+  <path d="M84 148C96 148 98 158 106 158S116 148 128 148" fill="none" stroke="#b45309" stroke-width="3"/>
+  <path d="M196 148C204 148 206 132 212 132S220 148 228 148" fill="none" stroke="#12925f" stroke-width="3.5"/>
+</svg>

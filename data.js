@@ -49,6 +49,9 @@ window.SITE = {
       desc: "카르노 기관과 스털링 기관이 작동하는 모습과 순환 과정, 열효율 비교", added: "2026-11-06" },
     { title: "단진동 탐구", type: "sim", subject: "mechanics", lesson: "III-1-01",
       href: "sims/shm.html", thumb: "assets/thumbs/shm.svg",
-      desc: "수업 시연용: 용수철 진자, 주기 비교, 등속 원운동의 그림자(3D)를 그림과 화살표로", added: "2026-11-10" }
+      desc: "수업 시연용: 용수철 진자, 주기 비교, 등속 원운동의 그림자(3D)를 그림과 화살표로", added: "2026-11-10" },
+    { title: "탄성파 탐구", type: "sim", subject: "mechanics", lesson: "III-1-02",
+      href: "sims/wave.html", thumb: "assets/thumbs/wave.svg",
+      desc: "수업 시연용: 고정단 반사, 자유단 반사, 굵기가 다른 줄 사이의 반사와 투과", added: "2026-11-11" }
   ]
 };

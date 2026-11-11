@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="고정단 반사, 자유단 반사, 굵기가 다른 줄 사이에서 반사와 투과를 보여 주는 수업 시연용 탄성파 시뮬레이션">
+<title>탄성파 탐구</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/sim.css?v=6">
+<style>
+/* 이 페이지의 색: 입사파, 반사파, 투과파 */
+:root { --inc: var(--accent); --ref: var(--mark); --tra: var(--work); }
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+#scene { aspect-ratio: 16 / 7; touch-action: pan-y; }
+@media (max-width: 40rem) { #scene { aspect-ratio: 4 / 3; } }
+.bar { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
+.group { display: flex; flex-wrap: wrap; gap: 0.375rem; align-items: center; }
+.group .lbl { font-size: 0.875rem; font-weight: 600; color: var(--muted); margin-right: 0.125rem; }
+.tog { font: inherit; font-size: 0.9375rem; font-weight: 500; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.375rem 0.75rem; cursor: pointer; }
+.tog:hover { border-color: var(--accent); }
+.tog[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.875rem; color: var(--muted); margin: 0; }
+.legend i { display: inline-block; width: 1.5rem; border-top: 3px dashed; vertical-align: middle; margin-right: 0.25rem; }
+
+/* 한눈에 정리 */
+.law-banner { margin: 0; padding: 0.75rem 1rem; background: var(--accent-soft); border-radius: 10px; font-weight: 700; font-size: 1.0625rem; }
+.sum-fig svg { display: block; width: 100%; height: auto; }
+.sum-table th, .sum-table td { text-align: left; white-space: normal; vertical-align: top; }
+.sum-table td:first-child { font-weight: 600; white-space: nowrap; }
+.sum-wrap [data-id] { cursor: pointer; transition: opacity 0.15s; }
+.sum-wrap.has-pick [data-id]:not(.on) { opacity: 0.18; }
+.sum-wrap.has-pick tr.on { background: var(--accent-soft); }
+@media (prefers-reduced-motion: reduce) { .sum-wrap [data-id] { transition: none; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="sim-head">
+    <a class="back" href="../index.html">← 물리 수업 자료실</a>
+    <span class="lesson-code">역학과 에너지 · III-1-02</span>
+    <h1>탄성파 탐구</h1>
+  </header>
+
+  <div class="seg" id="cases" role="tablist" aria-label="장면 고르기"></div>
+
+  <div class="stack" id="lab">
+    <section class="panel" aria-label="줄을 따라 진행하는 파동">
+      <canvas id="scene" role="img" aria-label="줄을 따라 진행하는 파동"></canvas>
+      <p class="legend" id="legend" hidden>
+        <span><i style="border-color: var(--inc)"></i>입사파</span>
+        <span><i style="border-color: var(--ref)"></i>반사파</span>
+        <span id="lg-tra"><i style="border-color: var(--tra)"></i>투과파</span>
+        <span>굵은 실선 = 실제 줄의 모양 (두 파동의 합)</span>
+      </p>
+      <div class="bar">
+        <div class="group">
+          <button class="btn primary" type="button" id="btn-play">▶ 재생</button>
+          <button class="btn" type="button" id="btn-reset">처음으로</button>
+          <button class="btn" type="button" id="btn-step">조금씩 ▶|</button>
+          <button class="tog" type="button" id="btn-slow" aria-pressed="false">느리게</button>
+        </div>
+      </div>
+      <div class="bar" id="ctls"></div>
+    </section>
+  </div>
+
+  <div class="stack sum-wrap" id="summary" hidden>
+    <p class="law-banner">고정단, 또는 빠른 매질 → 느린 매질의 경계: 반사파의 위상이 반대 &nbsp;·&nbsp; 자유단, 또는 느린 매질 → 빠른 매질의 경계: 반사파의 위상이 같다 &nbsp;·&nbsp; 투과파의 위상은 항상 입사파와 같다</p>
+    <section class="panel sum-fig" aria-label="네 경우의 반사와 투과">
+      <h2>반사 전과 반사 후</h2>
+      <div id="sum-fig"></div>
+      <p class="note">그림이나 아래 표의 줄을 누르면 그 경우만 진하게 보입니다. 한 번 더 누르면 원래대로 돌아옵니다.</p>
+    </section>
+    <section class="panel" aria-label="네 경우 비교">
+      <h2>반사파와 투과파의 위상</h2>
+      <div class="table-wrap">
+        <table class="sum-table">
+          <thead><tr><th>경우</th><th>반사파</th><th>투과파</th><th>줄 끝·경계</th></tr></thead>
+          <tbody id="sum-rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <footer>줄의 장력은 어디서나 같고, 굵은 줄은 가는 줄보다 단위 길이당 질량이 커서 파동이 느리게 진행합니다. 흔드는 쪽 끝과 오른쪽 먼 끝에서는 반사가 없다고 봅니다.</footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var FONT = "'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif";
+  var TAU = Math.PI * 2;
+
+  var TABS = [["fixed", "고정단 반사"], ["free", "자유단 반사"], ["boundary", "굵기가 다른 줄"], ["sum", "한눈에 정리"]];
+  var V_THIN = 0.3, V_THICK = 0.15, L_END = 0.92, B = 0.5;
+  var st = { view: "fixed", t: 0, mode: "pulse", sign: 1, dir: "thin2thick", comp: false, beads: true };
+  var playing = false, slow = false;
+
+  /* 흔드는 쪽 끝(x = 0)의 변위: 시간 τ 의 함수 */
+  function src(tau) {
+    if (st.mode === "pulse") return st.sign * Math.exp(-Math.pow((tau - 0.7) / 0.22, 2));
+    return tau > 0 ? Math.sin(TAU * 1.1 * tau) * Math.min(1, tau / 0.4) : 0;
+  }
+  function speeds() { return st.dir === "thin2thick" ? [V_THIN, V_THICK] : [V_THICK, V_THIN]; }
+  /* 위치 x, 시간 t 에서 입사파·반사파·투과파의 변위 */
+  function parts(x, t) {
+    if (st.view === "boundary") {
+      var v = speeds(), v1 = v[0], v2 = v[1], r = (v2 - v1) / (v2 + v1);
+      if (x <= B) return { inc: src(t - x / v1), ref: r * src(t - (2 * B - x) / v1), tra: null };
+      return { inc: null, ref: null, tra: (1 + r) * src(t - B / v1 - (x - B) / v2) };
+    }
+    var v0 = V_THIN, sg = st.view === "fixed" ? -1 : 1;
+    return { inc: src(t - x / v0), ref: sg * src(t - (2 * L_END - x) / v0), tra: null };
+  }
+  function total(p) { return (p.inc || 0) + (p.ref || 0) + (p.tra || 0); }
+  function endTime() {
+    if (st.view === "boundary") { var v = speeds(); return Math.max(2 * B / v[0], B / v[0] + (1 - B) / v[1]) + 1.8; }
+    return 2 * L_END / V_THIN + 1.8;
+  }
+
+  /* ---------- 그리기 ---------- */
+  var col = {};
+  function colors() {
+    var cs = getComputedStyle(document.documentElement);
+    ["ink", "muted", "line", "accent", "surface", "bg", "mark", "work", "heat", "accent-soft"].forEach(function (n) { col[n] = cs.getPropertyValue("--" + n).trim(); });
+  }
+  function fit(cv) {
+    var w = cv.clientWidth, h = cv.clientHeight, dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+    return { c: c, w: w, h: h };
+  }
+  function text(c, s, x, y, color, align, size, weight) {
+    c.font = (weight || 600) + " " + (size || 15) + "px " + FONT; c.fillStyle = color; c.textAlign = align || "center"; c.textBaseline = "middle"; c.fillText(s, x, y);
+  }
+  function draw() {
+    var f = fit($("scene")), c = f.c, w = f.w, h = f.h, t = st.t, bnd = st.view === "boundary";
+    var ml = 40, mr = bnd ? 0 : 46, span = bnd ? 1 : L_END, mid = h * 0.56, A = h * 0.3, N = 500;
+    function X(x) { return ml + x / span * (w - ml - mr); }
+    function Y(y) { return mid - y * A; }
+    /* 평형 위치 */
+    c.save(); c.setLineDash([5, 6]); c.strokeStyle = col.line; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(ml, mid); c.lineTo(w, mid); c.stroke(); c.restore();
+    /* 흔드는 쪽 끝 */
+    c.strokeStyle = col.muted; c.lineWidth = 2; c.beginPath(); c.moveTo(ml - 18, Y(1.1)); c.lineTo(ml - 18, Y(-1.1)); c.stroke();
+    var y0 = Y(src(t));
+    c.fillStyle = col.ink; c.fillRect(ml - 26, y0 - 9, 16, 18); c.beginPath(); c.moveTo(ml - 10, y0); c.lineTo(ml, y0); c.strokeStyle = col.ink; c.lineWidth = 3; c.stroke();
+    text(c, "흔드는 곳", ml - 18, h - 14, col.muted, "left", 14, 600);
+    /* 오른쪽 끝 또는 경계 */
+    if (st.view === "fixed") {
+      var xw = X(L_END);
+      c.fillStyle = col.ink; c.fillRect(xw, Y(1.25), 10, Y(-1.25) - Y(1.25));
+      c.strokeStyle = col.muted; c.lineWidth = 1.5;
+      for (var yy = Y(1.25); yy < Y(-1.25); yy += 12) { c.beginPath(); c.moveTo(xw + 10, yy); c.lineTo(xw + 20, yy + 8); c.stroke(); }
+      text(c, "고정단 (벽에 묶임)", xw + 6, h - 14, col.ink, "right", 14, 700);
+    } else if (st.view === "free") {
+      var xp = X(L_END), yr = Y(total(parts(L_END, t)));
+      c.strokeStyle = col.muted; c.lineWidth = 4; c.beginPath(); c.moveTo(xp + 9, Y(1.3)); c.lineTo(xp + 9, Y(-1.3)); c.stroke();
+      c.strokeStyle = col.ink; c.lineWidth = 3; c.beginPath(); c.ellipse(xp + 9, yr, 10, 5, 0, 0, TAU); c.stroke();
+      text(c, "자유단 (막대를 따라 미끄러지는 고리)", xp + 14, h - 14, col.ink, "right", 14, 700);
+    } else {
+      var xb = X(B), v = speeds(), thin1 = st.dir === "thin2thick";
+      c.save(); c.setLineDash([4, 4]); c.strokeStyle = col.muted; c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(xb, 12); c.lineTo(xb, h - 26); c.stroke(); c.restore();
+      text(c, "경계", xb, h - 14, col.ink, "center", 14, 700);
+      text(c, thin1 ? "가는 줄 — 파동이 빠르다" : "굵은 줄 — 파동이 느리다", (ml + xb) / 2, 18, col.ink, "center", 15, 700);
+      text(c, thin1 ? "굵은 줄 — 파동이 느리다" : "가는 줄 — 파동이 빠르다", (xb + w) / 2, 18, col.ink, "center", 15, 700);
+    }
+    /* 입사파·반사파·투과파 따로 */
+    if (st.comp) {
+      [["inc", col.accent], ["ref", col.mark], ["tra", col.work]].forEach(function (k) {
+        c.save(); c.setLineDash([8, 6]); c.strokeStyle = k[1]; c.lineWidth = 2.5; c.beginPath();
+        var on = false;
+        for (var i = 0; i <= N; i++) {
+          var x = span * i / N, p = parts(x, t)[k[0]];
+          if (p === null) { on = false; continue; }
+          if (on) c.lineTo(X(x), Y(p)); else { c.moveTo(X(x), Y(p)); on = true; }
+        }
+        c.stroke(); c.restore();
+      });
+    }
+    /* 실제 줄 (경계에서는 굵기를 다르게) */
+    c.strokeStyle = col.ink; c.lineJoin = "round"; c.lineCap = "round";
+    function rope(x1, x2, lw) {
+      c.lineWidth = lw; c.beginPath();
+      for (var i = 0; i <= N; i++) { var x = x1 + (x2 - x1) * i / N, y = Y(total(parts(x, t))); if (i) c.lineTo(X(x), y); else c.moveTo(X(x), y); }
+      c.stroke();
+    }
+    if (bnd) {
+      var thinW = 3, thickW = 9;
+      rope(0, B, st.dir === "thin2thick" ? thinW : thickW);
+      rope(B, 1, st.dir === "thin2thick" ? thickW : thinW);
+      c.fillStyle = col.ink; c.beginPath(); c.arc(X(B), Y(total(parts(B, t))), 7, 0, TAU); c.fill();
+    } else rope(0, L_END, 4);
+    /* 매질 입자: 위아래로만 움직인다 */
+    if (st.beads) {
+      for (var j = 1; j * 0.04 < span - 0.01; j++) {
+        var bx = j * 0.04, by = Y(total(parts(bx, t))), mark = j === 6;
+        c.fillStyle = mark ? col.heat : col.surface; c.strokeStyle = mark ? col.heat : col.muted; c.lineWidth = 1.5;
+        c.beginPath(); c.arc(X(bx), by, mark ? 6 : 3.5, 0, TAU); c.fill(); c.stroke();
+      }
+    }
+  }
+
+  /* ---------- 한눈에 정리 ---------- */
+  var picked = null;
+  function renderSummary() {
+    var W = 660, rowH = 104;
+    var cases = [
+      { id: "fixed", name: "고정단", end: "wall", ref: -1, tra: 0 },
+      { id: "free", name: "자유단", end: "pole", ref: 1, tra: 0 },
+      { id: "t2k", name: "가는 줄 → 굵은 줄", end: "b-t2k", ref: -1, tra: 1 },
+      { id: "k2t", name: "굵은 줄 → 가는 줄", end: "b-k2t", ref: 1, tra: 1 }
+    ];
+    function bump(x0, y0, amp, wd, color, lw) {
+      var d = "";
+      for (var i = 0; i <= 40; i++) { var u = -1 + 2 * i / 40, x = x0 + u * wd * 2.2, y = y0 - amp * Math.exp(-u * u * 4.8); d += (i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1); }
+      return '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + lw + '"/>';
+    }
+    function arrowH(x, y, dir, color) { return '<path d="M' + x + ' ' + y + 'h' + dir * 22 + '" stroke="' + color + '" stroke-width="3"/><path d="M' + (x + dir * 30) + ' ' + y + 'l' + (-dir * 9) + ' -6v12z" fill="' + color + '"/>'; }
+    var s = '<svg viewBox="0 0 ' + W + ' ' + (rowH * 4 + 30) + '" role="img" aria-label="네 경우의 반사 전과 반사 후 그림" font-size="14">' +
+      '<text x="250" y="16" text-anchor="middle" fill="var(--muted)" font-weight="700">반사 전</text><text x="520" y="16" text-anchor="middle" fill="var(--muted)" font-weight="700">반사 후</text>';
+    cases.forEach(function (cs, i) {
+      var y0 = 30 + i * rowH, mid = y0 + rowH * 0.62, g = '<g data-id="' + cs.id + '">';
+      g += '<text x="8" y="' + (mid - 6) + '" font-weight="700" fill="var(--ink)">' + cs.name + '</text>';
+      [[150, 350], [400, 640]].forEach(function (pan, k) {
+        var x1 = pan[0], x2 = pan[1], endX = cs.end === "wall" || cs.end === "pole" ? x2 - 14 : (x1 + x2) / 2;
+        if (cs.end.indexOf("b-") === 0) {
+          var thinL = cs.end === "b-t2k";
+          g += '<path d="M' + x1 + ' ' + mid + 'H' + endX + '" stroke="var(--muted)" stroke-width="' + (thinL ? 2 : 6) + '"/>' +
+            '<path d="M' + endX + ' ' + mid + 'H' + x2 + '" stroke="var(--muted)" stroke-width="' + (thinL ? 6 : 2) + '"/>' +
+            '<circle cx="' + endX + '" cy="' + mid + '" r="4" fill="var(--ink)"/>';
+        } else {
+          g += '<path d="M' + x1 + ' ' + mid + 'H' + endX + '" stroke="var(--muted)" stroke-width="2"/>';
+          if (cs.end === "wall") g += '<rect x="' + endX + '" y="' + (mid - 34) + '" width="8" height="68" fill="var(--ink)"/>';
+          else g += '<path d="M' + (endX + 6) + ' ' + (mid - 38) + 'V' + (mid + 38) + '" stroke="var(--muted)" stroke-width="3"/><ellipse cx="' + (endX + 6) + '" cy="' + mid + '" rx="7" ry="4" fill="none" stroke="var(--ink)" stroke-width="2"/>';
+        }
+        if (k === 0) {
+          var bx = (x1 + endX) / 2 - 10;
+          g += bump(bx, mid, 30, 14, "var(--inc)", 3.5) + arrowH(bx + 26, mid - 40, 1, "var(--inc)");
+        } else {
+          var rx = (x1 + endX) / 2 - 6;
+          var ra = cs.end.indexOf("b-") === 0 ? 14 : 30;
+          g += bump(rx, mid, cs.ref * ra, 14, "var(--ref)", 3.5) + arrowH(rx - 26, mid - 44, -1, "var(--ref)");
+          if (cs.tra) {
+            var tw = cs.end === "b-t2k" ? 8 : 22, ta = cs.end === "b-t2k" ? 20 : 40, tx = (endX + x2) / 2 + 8;
+            g += bump(tx, mid, ta, tw, "var(--tra)", 3.5) + arrowH(tx + 24, mid - ta - 12, 1, "var(--tra)");
+          }
+        }
+      });
+      g += '</g>';
+      s += g + (i < 3 ? '<path d="M8 ' + (y0 + rowH - 4) + 'H' + (W - 8) + '" stroke="var(--line)"/>' : "");
+    });
+    s += '<text x="400" y="' + (rowH * 4 + 26) + '" fill="var(--muted)" font-size="13"><tspan fill="var(--inc)" font-weight="700">입사파</tspan>  <tspan fill="var(--ref)" font-weight="700">반사파</tspan>  <tspan fill="var(--tra)" font-weight="700">투과파</tspan></text></svg>';
+    $("sum-fig").innerHTML = s;
+    var rows = $("sum-rows"); rows.textContent = "";
+    [["fixed", "고정단 반사", "위상 반대 (마루 → 골)", "—", "줄 끝이 움직이지 못한다"],
+     ["free", "자유단 반사", "위상 같음 (마루 → 마루)", "—", "줄 끝이 자유롭게 움직인다"],
+     ["t2k", "가는 줄 → 굵은 줄", "위상 반대 (고정단과 비슷)", "위상 같음, 파장이 짧아진다", "빠른 매질 → 느린 매질"],
+     ["k2t", "굵은 줄 → 가는 줄", "위상 같음 (자유단과 비슷)", "위상 같음, 파장이 길어진다", "느린 매질 → 빠른 매질"]].forEach(function (r) {
+      var tr = document.createElement("tr"); tr.setAttribute("data-id", r[0]); tr.tabIndex = 0;
+      r.slice(1).forEach(function (x) { var td = document.createElement("td"); td.textContent = x; tr.appendChild(td); });
+      rows.appendChild(tr);
+    });
+    var wrap = $("summary"), marks = wrap.querySelectorAll("[data-id]");
+    function apply() {
+      wrap.classList.toggle("has-pick", picked !== null);
+      Array.prototype.forEach.call(marks, function (m) { m.classList.toggle("on", m.getAttribute("data-id") === picked); });
+    }
+    Array.prototype.forEach.call(marks, function (m) {
+      function pick() { picked = picked === m.getAttribute("data-id") ? null : m.getAttribute("data-id"); apply(); }
+      m.addEventListener("click", pick);
+      m.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+    });
+    apply();
+  }
+
+  /* ---------- 조작부 ---------- */
+  function group(parent, label) {
+    var g = document.createElement("div"); g.className = "group";
+    var l = document.createElement("span"); l.className = "lbl"; l.textContent = label; g.appendChild(l);
+    parent.appendChild(g); return g;
+  }
+  function choice(parent, label, opts, cur, cb) {
+    var g = group(parent, label);
+    opts.forEach(function (o) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "tog"; b.textContent = o[1]; b.setAttribute("aria-pressed", String(o[0] === cur));
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call(g.querySelectorAll(".tog"), function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+        cb(o[0]);
+      });
+      g.appendChild(b);
+    });
+  }
+  function tog(parent, label, on, cb) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "tog"; b.textContent = label; b.setAttribute("aria-pressed", String(on));
+    b.addEventListener("click", function () { var v = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(v)); cb(v); });
+    parent.appendChild(b);
+  }
+  function restart() { st.t = 0; playing = false; updateButtons(); }
+  function renderCtls() {
+    var box = $("ctls"); box.textContent = "";
+    choice(box, "파동", [["pulse", "펄스"], ["wave", "연속파"]], st.mode, function (v) { st.mode = v; restart(); renderCtls(); });
+    if (st.mode === "pulse") choice(box, "모양", [[1, "마루"], [-1, "골"]], st.sign, function (v) { st.sign = v; restart(); });
+    if (st.view === "boundary") choice(box, "진행 방향", [["thin2thick", "가는 줄 → 굵은 줄"], ["thick2thin", "굵은 줄 → 가는 줄"]], st.dir, function (v) { st.dir = v; restart(); });
+    var gv = group(box, "보기");
+    tog(gv, "입사파·반사파 나눠 보기", st.comp, function (v) { st.comp = v; $("legend").hidden = !v; });
+    tog(gv, "매질 입자", st.beads, function (v) { st.beads = v; });
+  }
+  function updateButtons() { $("btn-play").textContent = playing ? "⏸ 멈춤" : "▶ 재생"; $("btn-slow").setAttribute("aria-pressed", String(slow)); }
+  function renderTabs() {
+    var box = $("cases"); box.textContent = "";
+    TABS.forEach(function (tb) {
+      var b = document.createElement("button"); b.type = "button"; b.id = "case-" + tb[0]; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(st.view === tb[0])); b.textContent = tb[1];
+      b.addEventListener("click", function () { go(tb[0]); }); box.appendChild(b);
+    });
+  }
+  function go(id) {
+    st.view = id;
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* 파일로 열 때 */ }
+    $("lab").hidden = id === "sum"; $("summary").hidden = id !== "sum";
+    renderTabs();
+    if (id === "sum") { renderSummary(); return; }
+    $("scene").setAttribute("aria-label", { fixed: "벽에 묶인 줄 끝에서 반사하는 파동", free: "자유롭게 움직이는 줄 끝에서 반사하는 파동", boundary: "굵기가 다른 두 줄의 경계에서 반사하고 투과하는 파동" }[id]);
+    $("lg-tra").hidden = id !== "boundary";
+    restart(); renderCtls();
+  }
+
+  $("btn-play").addEventListener("click", function () {
+    if (!playing && st.mode === "pulse" && st.t >= endTime()) st.t = 0;
+    playing = !playing; updateButtons();
+  });
+  $("btn-reset").addEventListener("click", restart);
+  $("btn-step").addEventListener("click", function () { playing = false; st.t += 0.08; updateButtons(); });
+  $("btn-slow").addEventListener("click", function () { slow = !slow; updateButtons(); });
+
+  var last = 0;
+  function frame(ms) {
+    var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms;
+    if (st.view !== "sum") {
+      if (playing) {
+        st.t += dt * (slow ? 0.3 : 1);
+        if (st.mode === "pulse" && st.t >= endTime()) { playing = false; updateButtons(); }
+      }
+      colors(); draw();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  colors();
+  var h0 = location.hash.replace("#", "");
+  go(TABS.some(function (t) { return t[0] === h0; }) ? h0 : "fixed");
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
