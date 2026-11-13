@@ -115,7 +115,7 @@
     /* 연직: 변위 x 는 평형점 기준, 위쪽이 + (단위 m, 그림에만 쓰고 화면에 숫자로 내지 않는다) */
     vertical: { m: 1, k: 10, A: 0.5, phi: Math.PI, t: 0, drag: false, dx: 0, stops: false, showV: true, showA: true, showF: true, cmp: false },
     compare: { mode: "m", t: 0 },
-    shadow: { A: 0.16, w: 1.6, t: 0, showV: true, showA: true }
+    shadow: { A: 0.16, w: 1.6, t: 0, showV: true, showA: true, showSpring: false }
   };
   var G = 9.8, VL0 = 0.6, VAMAX = 0.8;
   function wVert() { return Math.sqrt(S.vertical.k / S.vertical.m); }
@@ -301,7 +301,8 @@
     if (s.showV) arrow3(c, [bx, CY + 0.28, DEPTH + 0.01], [bx - sn * LV, CY + 0.28, DEPTH + 0.01], w, h, col.v, 4);
     if (s.showA) arrow3(c, [bx, CY - 0.28, DEPTH + 0.01], [bx - cs * LA, CY - 0.28, DEPTH + 0.01], w, h, col.a, 4);
     label3(c, [bx, CY + 0.55, DEPTH], "그림자", col.ink, w, h, "center", [Math.abs(bx) < 0.55 ? bx + 0.8 : bx, CY, DEPTH - 0.3]);
-    /* 그림자 아래 용수철 진자 (같이 움직인다) */
+    /* 그림자 아래 용수철 진자 (같이 움직인다) — 「용수철 진자」를 켰을 때만 */
+    if (s.showSpring) {
     line3(c, [-2.5, 0.001, TRACKZ - 0.2], [2.5, 0.001, TRACKZ - 0.2], w, h, col.line, 2);
     path3(c, [[-2.55, 0, TRACKZ - 0.2], [-2.45, 0, TRACKZ - 0.2], [-2.45, 0.42, TRACKZ - 0.2], [-2.55, 0.42, TRACKZ - 0.2]], w, h, true); c.fillStyle = col.ink; c.fill();
     var sp = [], n = 24, x1 = -2.45, x2 = bx - 0.18;
@@ -310,6 +311,7 @@
     var cube = []; [-0.18, 0.18].forEach(function (dx) { [0, 0.34].forEach(function (dy) { [-0.18, 0.18].forEach(function (dz) { cube.push(project([bx + dx, dy, TRACKZ + dz], w, h)); }); }); });
     var hb = hull(cube); c.fillStyle = col.accent; c.beginPath(); hb.forEach(function (q, j) { if (j) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.closePath(); c.fill();
     label3(c, [-1.6, 0.08, TRACKZ + 0.55], "용수철 진자", col.accent, w, h, "center", [-2.05, 0, TRACKZ + 0.45]);
+    }
     /* 빛 */
     for (var r = -1; r <= 1; r += 2) line3(c, [r * 2.2, CY, 1.55], [r * 2.2, CY, DEPTH + 0.2], w, h, col.mark, 1.5, [8, 6]);
     arrow3(c, [2.2, CY + 0.25, 1.4], [2.2, CY + 0.25, 0.6], w, h, col.mark, 3); label3(c, [2.2, CY + 0.55, 1.1], "빛", col.mark, w, h);
@@ -540,6 +542,7 @@
       var hS = S.shadow, gv = group(box, "보기");
       tog(gv, "속도", hS.showV, function (v) { hS.showV = v; }, "var(--v)");
       tog(gv, "가속도", hS.showA, function (v) { hS.showA = v; }, "var(--a)");
+      tog(gv, "용수철 진자", hS.showSpring, function (v) { hS.showSpring = v; });
       var gc = group(box, "보는 방향");
       [["비스듬히", -0.62, 0.38], ["빛이 오는 방향", 0, 0], ["위에서", 0, 1.5]].forEach(function (o) {
         var b = document.createElement("button"); b.type = "button"; b.className = "tog"; b.textContent = o[0];
