@@ -300,7 +300,7 @@
     c.fillStyle = "rgba(27,31,39,0.55)"; c.beginPath(); c.arc(sh[0], sh[1], Math.max(5, 0.13 * sh[2]), 0, TAU); c.fill();
     if (s.showV) arrow3(c, [bx, CY + 0.28, DEPTH + 0.01], [bx - sn * LV, CY + 0.28, DEPTH + 0.01], w, h, col.v, 4);
     if (s.showA) arrow3(c, [bx, CY - 0.28, DEPTH + 0.01], [bx - cs * LA, CY - 0.28, DEPTH + 0.01], w, h, col.a, 4);
-    label3(c, [bx, CY + 0.55, DEPTH], "그림자", col.ink, w, h, "center", [bx, CY, DEPTH - (Math.abs(bx) < 0.55 ? 0.62 : 0.3)]);
+    label3(c, [bx, CY + 0.55, DEPTH], "그림자", col.ink, w, h, "center", [Math.abs(bx) < 0.55 ? bx + 0.8 : bx, CY, DEPTH - 0.3]);
     /* 그림자 아래 용수철 진자 (같이 움직인다) */
     line3(c, [-2.5, 0.001, TRACKZ - 0.2], [2.5, 0.001, TRACKZ - 0.2], w, h, col.line, 2);
     path3(c, [[-2.55, 0, TRACKZ - 0.2], [-2.45, 0, TRACKZ - 0.2], [-2.45, 0.42, TRACKZ - 0.2], [-2.55, 0.42, TRACKZ - 0.2]], w, h, true); c.fillStyle = col.ink; c.fill();
