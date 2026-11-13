@@ -256,12 +256,13 @@
   /* ---------- ③ 원운동의 그림자 (3D) ---------- */
   var DEPTH = -1.5, CY = 1.25, TRACKZ = -1.2;
   function project(p, w, h) {
-    var x = p[0], y = p[1] - 1.0, z = p[2] + 0.4;
+    var top = Math.max(0, Math.min(1, (cam.pitch - 0.4) / 1.1));
+    var x = p[0], y = p[1] - 1.0, z = p[2] + 0.4 - 0.65 * top;
     var cyw = Math.cos(cam.yaw), syw = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), spi = Math.sin(cam.pitch);
     var x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw;
     var y2 = y * cp - z1 * spi, z2 = y * spi + z1 * cp;
     /* 위에서 내려다볼수록 바닥 전체가 보여야 하므로 조금씩 멀리서 본다 (화살표가 잘리지 않게) */
-    var zoom = 1 - 0.45 * Math.max(0, cam.pitch - 0.4);
+    var zoom = 1 - 0.22 * top;
     var d = 8 - z2, f = Math.min(w, h * 1.6) * 1.6 * zoom, s = f / d;
     return [w / 2 + x1 * s, h / 2 - y2 * s, s];
   }
@@ -273,7 +274,7 @@
     c.save(); if (dash) c.setLineDash(dash); c.strokeStyle = color; c.lineWidth = lw; c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.stroke(); c.restore();
   }
   function arrow3(c, a, b, w, h, color, lw) { var p = project(a, w, h), q = project(b, w, h); arrow(c, p[0], p[1], q[0], q[1], color, lw); }
-  function label3(c, p, s, color, w, h, align) { var q = project(p, w, h); text(c, s, q[0], q[1], color, align, 14, 600); }
+  function label3(c, p, s, color, w, h, align, pTop) { var q = project(pTop && cam.pitch > 0.95 ? pTop : p, w, h); text(c, s, q[0], q[1], color, align, 15, 700); }
   function hull(pts) {
     pts = pts.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
     function cross(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }
@@ -292,14 +293,14 @@
     line3(c, [-2.3, CY, DEPTH + 0.01], [2.3, CY, DEPTH + 0.01], w, h, col.muted, 1.5);
     line3(c, [0, CY - 0.35, DEPTH + 0.01], [0, 1.95, DEPTH + 0.01], w, h, col.accent, 1.5, [4, 4]);
     [-1, 1].forEach(function (q) { line3(c, [q * R, CY - 0.15, DEPTH + 0.01], [q * R, CY + 0.15, DEPTH + 0.01], w, h, col.muted, 2); });
-    label3(c, [0, 2.1, DEPTH], "평형점", col.accent, w, h);
-    label3(c, [-2.35, 2.12, DEPTH], "벽(스크린)", col.muted, w, h, "left");
+    label3(c, [0, 2.1, DEPTH], "평형점", col.accent, w, h, "center", [0, CY, DEPTH - 0.3]);
+    label3(c, [-2.35, 2.12, DEPTH], "벽(스크린)", col.muted, w, h, "left", [-2.5, CY, DEPTH - 0.3]);
     /* 그림자와, 공의 화살표를 벽에 비춘 그림자의 화살표 */
     var sh = project([bx, CY, DEPTH + 0.01], w, h);
     c.fillStyle = "rgba(27,31,39,0.55)"; c.beginPath(); c.arc(sh[0], sh[1], Math.max(5, 0.13 * sh[2]), 0, TAU); c.fill();
     if (s.showV) arrow3(c, [bx, CY + 0.28, DEPTH + 0.01], [bx - sn * LV, CY + 0.28, DEPTH + 0.01], w, h, col.v, 4);
     if (s.showA) arrow3(c, [bx, CY - 0.28, DEPTH + 0.01], [bx - cs * LA, CY - 0.28, DEPTH + 0.01], w, h, col.a, 4);
-    label3(c, [bx, CY + 0.55, DEPTH], "그림자", col.ink, w, h);
+    label3(c, [bx, CY + 0.55, DEPTH], "그림자", col.ink, w, h, "center", [bx, CY, DEPTH - (Math.abs(bx) < 0.55 ? 0.62 : 0.3)]);
     /* 그림자 아래 용수철 진자 (같이 움직인다) */
     line3(c, [-2.5, 0.001, TRACKZ - 0.2], [2.5, 0.001, TRACKZ - 0.2], w, h, col.line, 2);
     path3(c, [[-2.55, 0, TRACKZ - 0.2], [-2.45, 0, TRACKZ - 0.2], [-2.45, 0.42, TRACKZ - 0.2], [-2.55, 0.42, TRACKZ - 0.2]], w, h, true); c.fillStyle = col.ink; c.fill();
@@ -308,7 +309,7 @@
     c.strokeStyle = col.ink; c.lineWidth = 2; path3(c, sp, w, h); c.stroke();
     var cube = []; [-0.18, 0.18].forEach(function (dx) { [0, 0.34].forEach(function (dy) { [-0.18, 0.18].forEach(function (dz) { cube.push(project([bx + dx, dy, TRACKZ + dz], w, h)); }); }); });
     var hb = hull(cube); c.fillStyle = col.accent; c.beginPath(); hb.forEach(function (q, j) { if (j) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.closePath(); c.fill();
-    label3(c, [-1.6, 0.08, TRACKZ + 0.55], "용수철 진자", col.accent, w, h);
+    label3(c, [-1.6, 0.08, TRACKZ + 0.55], "용수철 진자", col.accent, w, h, "center", [-2.05, 0, TRACKZ + 0.45]);
     /* 빛 */
     for (var r = -1; r <= 1; r += 2) line3(c, [r * 2.2, CY, 1.55], [r * 2.2, CY, DEPTH + 0.2], w, h, col.mark, 1.5, [8, 6]);
     arrow3(c, [2.2, CY + 0.25, 1.4], [2.2, CY + 0.25, 0.6], w, h, col.mark, 3); label3(c, [2.2, CY + 0.55, 1.1], "빛", col.mark, w, h);
@@ -324,7 +325,7 @@
     var g = c.createRadialGradient(b[0] - br * 0.35, b[1] - br * 0.35, br * 0.1, b[0], b[1], br);
     g.addColorStop(0, "#ffffff"); g.addColorStop(1, col.heat);
     c.fillStyle = g; c.beginPath(); c.arc(b[0], b[1], br, 0, TAU); c.fill();
-    label3(c, [0, CY + 0.5, R], "등속 원운동하는 공", col.heat, w, h);
+    label3(c, [0, CY + 0.5, R], "등속 원운동하는 공", col.heat, w, h, "center", [0, CY, R + 0.42]);
   }
 
   /* ---------- ① - 2 연직 용수철 진자 ---------- */
