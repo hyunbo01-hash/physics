@@ -260,7 +260,9 @@
     var cyw = Math.cos(cam.yaw), syw = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), spi = Math.sin(cam.pitch);
     var x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw;
     var y2 = y * cp - z1 * spi, z2 = y * spi + z1 * cp;
-    var d = 8 - z2, f = Math.min(w, h * 1.6) * 1.6, s = f / d;
+    /* 위에서 내려다볼수록 바닥 전체가 보여야 하므로 조금씩 멀리서 본다 (화살표가 잘리지 않게) */
+    var zoom = 1 - 0.45 * Math.max(0, cam.pitch - 0.4);
+    var d = 8 - z2, f = Math.min(w, h * 1.6) * 1.6 * zoom, s = f / d;
     return [w / 2 + x1 * s, h / 2 - y2 * s, s];
   }
   function path3(c, pts, w, h, close) {
