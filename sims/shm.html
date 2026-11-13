@@ -274,7 +274,8 @@
     c.save(); if (dash) c.setLineDash(dash); c.strokeStyle = color; c.lineWidth = lw; c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.stroke(); c.restore();
   }
   function arrow3(c, a, b, w, h, color, lw) { var p = project(a, w, h), q = project(b, w, h); arrow(c, p[0], p[1], q[0], q[1], color, lw); }
-  function label3(c, p, s, color, w, h, align, pTop) { var q = project(pTop && cam.pitch > 0.95 ? pTop : p, w, h); text(c, s, q[0], q[1], color, align, 15, 700); }
+  /* 위에서 볼 때(벽이 화면 아래쪽)는 pTop 자리에 가운데 맞춤으로 쓴다 */
+  function label3(c, p, s, color, w, h, align, pTop) { var tp = pTop && cam.pitch > 0.95, q = project(tp ? pTop : p, w, h); text(c, s, q[0], q[1], color, tp ? "center" : align, 15, 700); }
   function hull(pts) {
     pts = pts.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
     function cross(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }
@@ -294,7 +295,7 @@
     line3(c, [0, CY - 0.35, DEPTH + 0.01], [0, 1.95, DEPTH + 0.01], w, h, col.accent, 1.5, [4, 4]);
     [-1, 1].forEach(function (q) { line3(c, [q * R, CY - 0.15, DEPTH + 0.01], [q * R, CY + 0.15, DEPTH + 0.01], w, h, col.muted, 2); });
     label3(c, [0, 2.1, DEPTH], "평형점", col.accent, w, h, "center", [0, CY, DEPTH - 0.3]);
-    label3(c, [-2.35, 2.12, DEPTH], "벽(스크린)", col.muted, w, h, "left", [-2.5, CY, DEPTH - 0.3]);
+    label3(c, [-2.35, 2.12, DEPTH], "벽(스크린)", col.muted, w, h, "left", [-2.05, CY, DEPTH - 0.3]);
     /* 그림자와, 공의 화살표를 벽에 비춘 그림자의 화살표 */
     var sh = project([bx, CY, DEPTH + 0.01], w, h);
     c.fillStyle = "rgba(27,31,39,0.55)"; c.beginPath(); c.arc(sh[0], sh[1], Math.max(5, 0.13 * sh[2]), 0, TAU); c.fill();
@@ -544,7 +545,7 @@
       tog(gv, "가속도", hS.showA, function (v) { hS.showA = v; }, "var(--a)");
       tog(gv, "용수철 진자", hS.showSpring, function (v) { hS.showSpring = v; });
       var gc = group(box, "보는 방향");
-      [["비스듬히", -0.62, 0.38], ["빛이 오는 방향", 0, 0], ["위에서", 0, 1.5]].forEach(function (o) {
+      [["비스듬히", -0.62, 0.38], ["빛이 오는 방향", 0, 0], ["위에서", Math.PI, 1.5]].forEach(function (o) {
         var b = document.createElement("button"); b.type = "button"; b.className = "tog"; b.textContent = o[0];
         b.addEventListener("click", function () { camTo = { yaw: o[1], pitch: o[2] }; }); gc.appendChild(b);
       });
