@@ -234,7 +234,8 @@
   /* 화면 x 범위 [0, 1] 안에서, 파동이 이미 도착한 곳의 n 번째 특정 위상 위치 */
   function spots(t, off) {
     var r = [];
-    for (var n = 0; n < 12; n++) { var x = WV * t - (off + n) * WL; if (x > 0.02 && x < 0.99) r.push(x); }
+    var n0 = Math.max(0, Math.floor((WV * t - 1) / WL - off));   /* 오래 재생해도 화면 안의 위치부터 찾는다 */
+    for (var n = n0; n < n0 + 12; n++) { var x = WV * t - (off + n) * WL; if (x > 0.02 && x < 0.99) r.push(x); }
     return r;
   }
   function bracket(c, xa, xb, y, color, label) {
