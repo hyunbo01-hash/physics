@@ -52,6 +52,6 @@ window.SITE = {
       desc: "수업 시연용: 용수철 진자, 주기 비교, 등속 원운동의 그림자(3D)를 그림과 화살표로", added: "2026-11-10" },
     { title: "탄성파 탐구", type: "sim", subject: "mechanics", lesson: "III-1-02",
       href: "sims/wave.html", thumb: "assets/thumbs/wave.svg",
-      desc: "수업 시연용: 고정단 반사, 자유단 반사, 굵기가 다른 줄 사이의 반사와 투과", added: "2026-11-11" }
+      desc: "수업 시연용: 횡파와 종파의 진행 방향·진동 방향, 고정단·자유단 반사, 굵기가 다른 줄 사이의 반사와 투과", added: "2026-11-11" }
   ]
 };

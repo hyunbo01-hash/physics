@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="고정단 반사, 자유단 반사, 굵기가 다른 줄 사이에서 반사와 투과를 보여 주는 수업 시연용 탄성파 시뮬레이션">
+<meta name="description" content="횡파와 종파의 진행 방향과 진동 방향, 고정단 반사, 자유단 반사, 굵기가 다른 줄 사이에서 반사와 투과를 보여 주는 수업 시연용 탄성파 시뮬레이션">
 <title>탄성파 탐구</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="../assets/sim.css?v=6">
@@ -65,6 +65,19 @@
   </div>
 
   <div class="stack sum-wrap" id="summary" hidden>
+    <section class="panel" aria-label="횡파와 종파 비교">
+      <h2>횡파와 종파</h2>
+      <div class="table-wrap">
+        <table class="sum-table">
+          <thead><tr><th>파동</th><th>진행 방향과 진동 방향</th><th>모양</th><th>예</th></tr></thead>
+          <tbody>
+            <tr><td>횡파</td><td>서로 수직</td><td>마루와 골이 생긴다</td><td>줄을 위아래로 흔들 때의 파동, 지진파의 S파, 빛(전자기파)</td></tr>
+            <tr><td>종파</td><td>서로 나란하다</td><td>밀한 곳과 소한 곳이 생긴다</td><td>소리(음파), 지진파의 P파, 용수철을 앞뒤로 밀고 당길 때의 파동</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">두 파동 모두 매질은 제자리에서 진동할 뿐, 파동을 따라 함께 이동하지 않는다.</p>
+    </section>
     <p class="law-banner">고정단, 또는 빠른 매질 → 느린 매질의 경계: 반사파의 위상이 반대 &nbsp;·&nbsp; 자유단, 또는 느린 매질 → 빠른 매질의 경계: 반사파의 위상이 같다 &nbsp;·&nbsp; 투과파의 위상은 항상 입사파와 같다</p>
     <section class="panel sum-fig" aria-label="네 경우의 반사와 투과">
       <h2>반사 전과 반사 후</h2>
@@ -82,7 +95,7 @@
     </section>
   </div>
 
-  <footer>줄의 장력은 어디서나 같고, 굵은 줄은 가는 줄보다 단위 길이당 질량이 커서 파동이 느리게 진행합니다. 흔드는 쪽 끝과 오른쪽 먼 끝에서는 반사가 없다고 봅니다.</footer>
+  <footer>횡파·종파 장면은 왼쪽 끝을 일정하게 흔들어 만든 사인 모양의 파동이며, 빨간 입자(줄) 하나를 따라가면 매질의 진동 방향을 볼 수 있습니다. 반사 장면에서 줄의 장력은 어디서나 같고, 굵은 줄은 가는 줄보다 단위 길이당 질량이 커서 파동이 느리게 진행합니다. 흔드는 쪽 끝과 오른쪽 먼 끝에서는 반사가 없다고 봅니다.</footer>
 </div>
 
 <script>
@@ -91,9 +104,10 @@
   var FONT = "'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif";
   var TAU = Math.PI * 2;
 
-  var TABS = [["fixed", "고정단 반사"], ["free", "자유단 반사"], ["boundary", "굵기가 다른 줄"], ["sum", "한눈에 정리"]];
+  var TABS = [["trans", "횡파"], ["long", "종파"], ["fixed", "고정단 반사"], ["free", "자유단 반사"], ["boundary", "굵기가 다른 줄"], ["sum", "한눈에 정리"]];
   var V_THIN = 0.3, V_THICK = 0.15, L_END = 0.92, B = 0.5;
-  var st = { view: "fixed", t: 0, mode: "pulse", sign: 1, dir: "thin2thick", comp: false, beads: true };
+  var st = { view: "trans", t: 0, mode: "pulse", sign: 1, dir: "thin2thick", comp: false, beads: true, showProp: true, showVib: true, marks: false, lam: false };
+  function refl() { return st.view === "fixed" || st.view === "free" || st.view === "boundary"; }
   var playing = false, slow = false;
 
   /* 흔드는 쪽 끝(x = 0)의 변위: 시간 τ 의 함수 */
@@ -136,6 +150,7 @@
   }
   function draw() {
     var f = fit($("scene")), c = f.c, w = f.w, h = f.h, t = st.t, bnd = st.view === "boundary";
+    if (!refl()) { drawTL(c, w, h, t); return; }
     var ml = 40, mr = bnd ? 0 : 46, span = bnd ? 1 : L_END, mid = h * 0.56, A = h * 0.3, N = 500;
     function X(x) { return ml + x / span * (w - ml - mr); }
     function Y(y) { return mid - y * A; }
@@ -204,6 +219,117 @@
     }
   }
 
+  /* ---------- 횡파·종파: 왼쪽 끝을 일정하게 흔들어 만든 사인파 ---------- */
+  var WL = 0.25, WV = 0.2, WF = WV / WL;   /* 파장, 속력(화면 폭 = 1), 진동수 */
+  function sw(x, t) { var u = t - x / WV; return u > 0 ? Math.sin(TAU * WF * u) : 0; }
+  function arrow(c, x1, y1, x2, y2, color, lw, both) {
+    var a = Math.atan2(y2 - y1, x2 - x1), hd = 8 + lw * 2.2;
+    function head(x, y, ang) { c.beginPath(); c.moveTo(x, y); c.lineTo(x - hd * Math.cos(ang - 0.42), y - hd * Math.sin(ang - 0.42)); c.lineTo(x - hd * Math.cos(ang + 0.42), y - hd * Math.sin(ang + 0.42)); c.closePath(); c.fill(); }
+    var sx = both ? x1 + hd * 0.7 * Math.cos(a) : x1, sy = both ? y1 + hd * 0.7 * Math.sin(a) : y1;
+    c.strokeStyle = color; c.fillStyle = color; c.lineWidth = lw; c.lineCap = "butt";
+    c.beginPath(); c.moveTo(sx, sy); c.lineTo(x2 - hd * 0.7 * Math.cos(a), y2 - hd * 0.7 * Math.sin(a)); c.stroke();
+    head(x2, y2, a); if (both) head(x1, y1, a + Math.PI);
+  }
+  /* 화면 x 범위 [0, 1] 안에서, 파동이 이미 도착한 곳의 n 번째 특정 위상 위치 */
+  function spots(t, off) {
+    var r = [];
+    for (var n = 0; n < 12; n++) { var x = WV * t - (off + n) * WL; if (x > 0.02 && x < 0.99) r.push(x); }
+    return r;
+  }
+  function bracket(c, xa, xb, y, color, label) {
+    c.strokeStyle = color; c.fillStyle = color; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(xa, y - 7); c.lineTo(xa, y + 7); c.moveTo(xb, y - 7); c.lineTo(xb, y + 7); c.stroke();
+    c.font = "700 15px " + FONT; var tw = c.measureText(label).width + 12, xm = (xa + xb) / 2;
+    if (xb - xa > tw + 24) { arrow(c, xm - tw / 2, y, xa, y, color, 2); arrow(c, xm + tw / 2, y, xb, y, color, 2); text(c, label, xm, y, color, "center", 15, 700); }
+    else { arrow(c, xa + 1, y, xb - 1, y, color, 2, true); text(c, label, xm, y - 15, color, "center", 15, 700); }
+  }
+  function drawTL(c, w, h, t) {
+    var trans = st.view === "trans", ml = 44, mr = 22;
+    function X(x) { return ml + x * (w - ml - mr); }
+    var xm = 0.5, blue = col.accent, red = col.heat, nr = w < 500;
+    /* 파동의 진행 방향 */
+    if (st.showProp) {
+      var py = Math.max(20, h * 0.08), pa = X(0.5) - Math.min(130, w * 0.16), pb = X(0.5) + Math.min(130, w * 0.16);
+      arrow(c, pa, py, pb, py, blue, 4);
+      text(c, "파동의 진행 방향", pa - 12, py, blue, "right", nr ? 14 : 16, 700);
+    }
+    if (trans) {
+      var mid = h * 0.55, A = h * 0.24;
+      var Y = function (y) { return mid - y * A; };
+      c.save(); c.setLineDash([5, 6]); c.strokeStyle = col.line; c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(ml, mid); c.lineTo(w - mr, mid); c.stroke(); c.restore();
+      /* 흔드는 손잡이 */
+      c.strokeStyle = col.muted; c.lineWidth = 2; c.beginPath(); c.moveTo(ml - 20, Y(1.2)); c.lineTo(ml - 20, Y(-1.2)); c.stroke();
+      var y0 = Y(sw(0, t));
+      c.fillStyle = col.ink; c.fillRect(ml - 28, y0 - 9, 16, 18);
+      /* 줄 */
+      c.strokeStyle = col.ink; c.lineWidth = 3; c.lineJoin = "round"; c.lineCap = "round"; c.beginPath();
+      for (var i = 0; i <= 400; i++) { var x = i / 400, yy = Y(sw(x, t)); if (i) c.lineTo(X(x), yy); else { c.moveTo(ml - 12, y0); c.lineTo(X(x), yy); } }
+      c.stroke();
+      /* 마루·골 */
+      if (st.marks) {
+        spots(t, 0.25).forEach(function (x) { text(c, "마루", X(x), Y(1) - 18, col.ink, "center", 15, 700); });
+        spots(t, 0.75).forEach(function (x) { text(c, "골", X(x), Y(-1) + 20, col.ink, "center", 15, 700); });
+      }
+      /* 파장 */
+      if (st.lam) {
+        var cr = spots(t, 0.25);
+        if (cr.length >= 2) { var k = cr.length >= 3 ? 1 : 0; bracket(c, X(cr[k + 1]), X(cr[k]), Y(1) - 40, col.work, "파장"); }
+      }
+      /* 매질 입자 */
+      for (var j = 1; j * 0.025 < 0.995; j++) {
+        var bx = j * 0.025, on = st.showVib && Math.abs(bx - xm) < 1e-6;
+        if (on) continue;
+        c.fillStyle = col.surface; c.strokeStyle = col.muted; c.lineWidth = 1.5;
+        c.beginPath(); c.arc(X(bx), Y(sw(bx, t)), 4, 0, TAU); c.fill(); c.stroke();
+      }
+      if (st.showVib) {
+        var tx = X(xm);
+        c.save(); c.setLineDash([3, 5]); c.strokeStyle = red; c.lineWidth = 1.5;
+        c.beginPath(); c.moveTo(tx, Y(1.12)); c.lineTo(tx, Y(-1.12)); c.stroke(); c.restore();
+        arrow(c, tx + 22, Y(0.85), tx + 22, Y(-0.85), red, 3.5, true);
+        c.fillStyle = red; c.beginPath(); c.arc(tx, Y(sw(xm, t)), 8, 0, TAU); c.fill();
+        chip(c, "매질의 진동 방향", tx + 38, Y(-0.55), red, nr ? 14 : 16);
+      }
+      text(c, "흔드는 곳", ml - 28, h - 12, col.muted, "left", 14, 600);
+    } else {
+      var mid2 = h * 0.5, bh = h * 0.36, top = mid2 - bh / 2, bot = mid2 + bh / 2, D = 0.03;
+      var P = function (x) { return X(x + D * sw(x, t)); };
+      /* 피스톤 */
+      var px = P(0) - 10;
+      c.fillStyle = col.ink; c.fillRect(px - 6, top - 6, 10, bh + 12);
+      c.strokeStyle = col.ink; c.lineWidth = 5; c.beginPath(); c.moveTo(px - 6, mid2); c.lineTo(px - 30, mid2); c.stroke();
+      c.strokeStyle = col.line; c.lineWidth = 1.5; c.beginPath(); c.moveTo(ml - 12, top - 10); c.lineTo(w - mr + 6, top - 10); c.moveTo(ml - 12, bot + 10); c.lineTo(w - mr + 6, bot + 10); c.stroke();
+      /* 매질 입자: 세로 줄 하나 = 같은 자리의 입자들 */
+      var dx = 0.0125;
+      for (var q = 1; q * dx < 0.995; q++) {
+        var ex = q * dx, tracked = st.showVib && Math.abs(ex - xm) < 1e-6;
+        c.strokeStyle = tracked ? red : col.muted; c.lineWidth = tracked ? 4 : 2;
+        var lx = P(ex); c.beginPath(); c.moveTo(lx, top); c.lineTo(lx, bot); c.stroke();
+      }
+      if (st.marks) {
+        spots(t, 1).forEach(function (x) { text(c, "밀", P(x), top - 26, col.ink, "center", 16, 800); });
+        spots(t, 0.5).forEach(function (x) { text(c, "소", P(x), top - 26, col.muted, "center", 16, 800); });
+      }
+      if (st.lam) {
+        var cp = spots(t, 1);
+        if (cp.length >= 2) { var k2 = cp.length >= 3 ? 1 : 0; bracket(c, P(cp[k2 + 1]), P(cp[k2]), bot + 30, col.work, "파장"); }
+      }
+      if (st.showVib) {
+        var ex0 = X(xm), half = Math.max(30, D * (w - ml - mr) + 14), ay = st.lam ? bot + 58 : bot + 30;
+        c.save(); c.setLineDash([3, 5]); c.strokeStyle = red; c.lineWidth = 1.5;
+        c.beginPath(); c.moveTo(ex0, top - 4); c.lineTo(ex0, bot + 4); c.stroke(); c.restore();
+        arrow(c, ex0 - half, ay, ex0 + half, ay, red, 3.5, true);
+        text(c, "매질의 진동 방향", ex0 + half + 12, ay, red, "left", nr ? 14 : 16, 700);
+      }
+      text(c, "흔드는 곳", ml - 40, h - 12, col.muted, "left", 14, 600);
+    }
+  }
+  function chip(c, s, x, y, color, size) {
+    c.font = "700 " + size + "px " + FONT; var tw = c.measureText(s).width;
+    c.fillStyle = col.surface; c.globalAlpha = 0.9; c.fillRect(x - 4, y - size * 0.75, tw + 8, size * 1.5); c.globalAlpha = 1;
+    text(c, s, x, y, color, "left", size, 700);
+  }
   /* ---------- 한눈에 정리 ---------- */
   var picked = null;
   function renderSummary() {
@@ -302,6 +428,14 @@
   function restart() { st.t = 0; playing = false; updateButtons(); }
   function renderCtls() {
     var box = $("ctls"); box.textContent = "";
+    if (!refl()) {
+      var gt = group(box, "보기");
+      tog(gt, "진행 방향", st.showProp, function (v) { st.showProp = v; });
+      tog(gt, "진동 방향", st.showVib, function (v) { st.showVib = v; });
+      tog(gt, st.view === "trans" ? "마루·골" : "밀·소", st.marks, function (v) { st.marks = v; });
+      tog(gt, "파장", st.lam, function (v) { st.lam = v; });
+      return;
+    }
     choice(box, "파동", [["pulse", "펄스"], ["wave", "연속파"]], st.mode, function (v) { st.mode = v; restart(); renderCtls(); });
     if (st.mode === "pulse") choice(box, "모양", [[1, "마루"], [-1, "골"]], st.sign, function (v) { st.sign = v; restart(); });
     if (st.view === "boundary") choice(box, "진행 방향", [["thin2thick", "가는 줄 → 굵은 줄"], ["thick2thin", "굵은 줄 → 가는 줄"]], st.dir, function (v) { st.dir = v; restart(); });
@@ -324,13 +458,14 @@
     $("lab").hidden = id === "sum"; $("summary").hidden = id !== "sum";
     renderTabs();
     if (id === "sum") { renderSummary(); return; }
-    $("scene").setAttribute("aria-label", { fixed: "벽에 묶인 줄 끝에서 반사하는 파동", free: "자유롭게 움직이는 줄 끝에서 반사하는 파동", boundary: "굵기가 다른 두 줄의 경계에서 반사하고 투과하는 파동" }[id]);
+    $("scene").setAttribute("aria-label", { trans: "줄을 위아래로 흔들어 만든 횡파: 입자는 위아래로, 파동은 오른쪽으로", long: "앞뒤로 밀고 당겨 만든 종파: 입자는 좌우로, 파동도 오른쪽으로", fixed: "벽에 묶인 줄 끝에서 반사하는 파동", free: "자유롭게 움직이는 줄 끝에서 반사하는 파동", boundary: "굵기가 다른 두 줄의 경계에서 반사하고 투과하는 파동" }[id]);
     $("lg-tra").hidden = id !== "boundary";
+    $("legend").hidden = !(st.comp && refl());
     restart(); renderCtls();
   }
 
   $("btn-play").addEventListener("click", function () {
-    if (!playing && st.mode === "pulse" && st.t >= endTime()) st.t = 0;
+    if (!playing && refl() && st.mode === "pulse" && st.t >= endTime()) st.t = 0;
     playing = !playing; updateButtons();
   });
   $("btn-reset").addEventListener("click", restart);
@@ -343,7 +478,7 @@
     if (st.view !== "sum") {
       if (playing) {
         st.t += dt * (slow ? 0.3 : 1);
-        if (st.mode === "pulse" && st.t >= endTime()) { playing = false; updateButtons(); }
+        if (refl() && st.mode === "pulse" && st.t >= endTime()) { playing = false; updateButtons(); }
       }
       colors(); draw();
     }
@@ -352,7 +487,7 @@
 
   colors();
   var h0 = location.hash.replace("#", "");
-  go(TABS.some(function (t) { return t[0] === h0; }) ? h0 : "fixed");
+  go(TABS.some(function (t) { return t[0] === h0; }) ? h0 : "trans");
   requestAnimationFrame(frame);
 })();
 </script>
