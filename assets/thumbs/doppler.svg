@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="오른쪽으로 움직이는 음원에서 나온 파면이 앞쪽은 촘촘하고 뒤쪽은 성긴 그림">
+  <rect width="320" height="180" fill="#eef1fb"/>
+  <text x="160" y="24" text-anchor="middle" font-family="'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif" font-size="15" font-weight="700" fill="#1b1f27">도플러 효과</text>
+  <line x1="0" y1="128" x2="320" y2="128" stroke="#c9cfdb" stroke-width="2"/>
+  <g fill="none" stroke-width="2.5">
+    <circle cx="118" cy="104" r="92" stroke="#dc3f45"/>
+    <circle cx="140" cy="104" r="66" stroke="#12925f"/>
+    <circle cx="162" cy="104" r="40" stroke="#3453d1"/>
+    <circle cx="184" cy="104" r="14" stroke="#dc3f45"/>
+  </g>
+  <circle cx="118" cy="128" r="4" fill="#dc3f45"/><circle cx="140" cy="128" r="4" fill="#12925f"/><circle cx="162" cy="128" r="4" fill="#3453d1"/>
+  <rect x="186" y="96" width="18" height="32" rx="3" fill="#1b1f27"/>
+  <path d="M210 112h26" stroke="#12925f" stroke-width="4"/><path d="M246 112l-11-7v14z" fill="#12925f"/>
+  <g fill="#1b1f27" font-family="'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif" font-size="14" font-weight="800" text-anchor="middle">
+    <text x="195" y="90">S</text><text x="296" y="84">A</text><text x="14" y="84">B</text>
+  </g>
+  <g stroke="#1b1f27" stroke-width="3.5" stroke-linecap="round" fill="none">
+    <path d="M296 104v14l-5 10M296 118l5 10"/><path d="M14 104v14l-5 10M14 118l5 10"/>
+  </g>
+  <circle cx="296" cy="96" r="6" fill="#1b1f27"/><circle cx="14" cy="96" r="6" fill="#1b1f27"/>
+</svg>

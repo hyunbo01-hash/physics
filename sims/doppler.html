@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="음원이 움직일 때와 관측자가 움직일 때의 파면, 파장, 진동수 변화를 보여 주는 수업 시연용 도플러 효과 시뮬레이션">
+<title>도플러 효과 탐구</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/sim.css?v=6">
+<style>
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+.bench { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+@media (max-width: 56rem) { .bench { grid-template-columns: minmax(0, 1fr); } }
+#scene { aspect-ratio: 16 / 9; touch-action: pan-y; }
+#scope { aspect-ratio: 16 / 9; }
+@media (max-width: 40rem) { #scene { aspect-ratio: 4 / 3; } }
+.bar { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
+.group { display: flex; flex-wrap: wrap; gap: 0.375rem; align-items: center; }
+.group .lbl { font-size: 0.875rem; font-weight: 600; color: var(--muted); margin-right: 0.125rem; }
+.tog { font: inherit; font-size: 0.9375rem; font-weight: 500; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.375rem 0.75rem; cursor: pointer; }
+.tog:hover { border-color: var(--accent); }
+.tog[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+/* 수식 */
+.m { font-family: "Cambria Math", Cambria, "Times New Roman", serif; font-size: 1.25rem; white-space: nowrap; }
+.m i { font-style: italic; }
+.m sub { font-size: 0.7em; font-style: normal; }
+.fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 0.15em; }
+.fr > span { padding: 0 0.3em; line-height: 1.25; }
+.fr > span + span { border-top: 1.5px solid currentColor; }
+.fcard { border: 1px solid var(--line); border-radius: 10px; padding: 0.625rem 0.875rem; display: flex; flex-direction: column; gap: 0.375rem; }
+.fcard .who { font-weight: 700; font-size: 0.9375rem; }
+.fcard .res { font-size: 0.9375rem; color: var(--muted); }
+.fcard .res b { color: var(--ink); }
+.fline { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; align-items: center; }
+.big-f { font-size: 1.6rem; padding: 0.5rem 0; }
+.sum-table th, .sum-table td { text-align: left; white-space: normal; vertical-align: middle; }
+.sum-table td:first-child { font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="sim-head">
+    <a class="back" href="../index.html">← 물리 수업 자료실</a>
+    <span class="lesson-code">역학과 에너지 · III-2-01</span>
+    <h1>도플러 효과 탐구</h1>
+  </header>
+
+  <div class="seg" id="cases" role="tablist" aria-label="장면 고르기"></div>
+
+  <div class="bench" id="lab">
+    <section class="panel stack" aria-label="음원과 관측자, 퍼져 나가는 파면">
+      <canvas id="scene" role="img" aria-label="음원과 관측자, 퍼져 나가는 파면"></canvas>
+      <div class="bar">
+        <div class="group">
+          <button class="btn primary" type="button" id="btn-play">▶ 재생</button>
+          <button class="btn" type="button" id="btn-reset">처음으로</button>
+          <button class="btn" type="button" id="btn-step">조금씩 ▶|</button>
+          <button class="tog" type="button" id="btn-slow" aria-pressed="false">느리게</button>
+        </div>
+      </div>
+      <div class="bar" id="ctls"></div>
+    </section>
+    <div class="stack">
+      <section class="panel stack" id="scope-panel" aria-label="음원이 내는 소리와 관측자가 듣는 소리">
+        <h2>내는 소리와 듣는 소리</h2>
+        <canvas id="scope" role="img" aria-label="음원 S가 내는 파동과 관측자 A, B가 듣는 파동"></canvas>
+      </section>
+      <section class="panel stack" id="formula-panel" aria-label="관계식">
+        <h2>관계식</h2>
+        <div class="stack" id="formula" style="gap: 0.5rem"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="stack" id="summary" hidden>
+    <section class="panel stack" aria-label="도플러 효과의 일반적인 관계식">
+      <h2>도플러 효과의 일반적인 관계식</h2>
+      <div class="fline">
+        <span class="m big-f"><i>f</i><sub>O</sub> = <span class="fr"><span><i>v</i> ± <i>v</i><sub>O</sub></span><span><i>v</i> ∓ <i>v</i><sub>S</sub></span></span> <i>f</i><sub>S</sub></span>
+        <span class="note"><span class="m" style="font-size:1rem"><i>v</i></span>: 음파의 속력 &nbsp; <span class="m" style="font-size:1rem"><i>v</i><sub>S</sub></span>: 음원의 속력 &nbsp; <span class="m" style="font-size:1rem"><i>v</i><sub>O</sub></span>: 관측자의 속력<br><span class="m" style="font-size:1rem"><i>f</i><sub>S</sub></span>: 음원의 진동수 &nbsp; <span class="m" style="font-size:1rem"><i>f</i><sub>O</sub></span>: 관측자가 측정한 진동수</span>
+      </div>
+      <div class="table-wrap">
+        <table class="sum-table">
+          <thead><tr><th>부호 규칙</th><th>가까워질 때</th><th>멀어질 때</th></tr></thead>
+          <tbody>
+            <tr><td>분자의 <span class="m" style="font-size:1.05rem"><i>v</i><sub>O</sub></span> (관측자)</td><td><span class="m">+</span> &nbsp;(<span class="m" style="font-size:1.05rem"><i>v</i> + <i>v</i><sub>O</sub></span>)</td><td><span class="m">−</span> &nbsp;(<span class="m" style="font-size:1.05rem"><i>v</i> − <i>v</i><sub>O</sub></span>)</td></tr>
+            <tr><td>분모의 <span class="m" style="font-size:1.05rem"><i>v</i><sub>S</sub></span> (음원)</td><td><span class="m">−</span> &nbsp;(<span class="m" style="font-size:1.05rem"><i>v</i> − <i>v</i><sub>S</sub></span>)</td><td><span class="m">+</span> &nbsp;(<span class="m" style="font-size:1.05rem"><i>v</i> + <i>v</i><sub>S</sub></span>)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="panel stack" aria-label="경우별 비교">
+      <h2>경우별 비교</h2>
+      <div class="table-wrap">
+        <table class="sum-table">
+          <thead><tr><th>경우</th><th>파장</th><th>관측자가 측정한 진동수</th><th>소리</th></tr></thead>
+          <tbody>
+            <tr><td>음원이 다가올 때</td><td><span class="m" style="font-size:1.05rem"><i>λ</i> − <i>v</i><sub>S</sub><i>T</i></span> (짧아진다)</td><td><span class="m"><span class="fr"><span><i>v</i></span><span><i>v</i> − <i>v</i><sub>S</sub></span></span> <i>f</i></span></td><td>높아진다</td></tr>
+            <tr><td>음원이 멀어질 때</td><td><span class="m" style="font-size:1.05rem"><i>λ</i> + <i>v</i><sub>S</sub><i>T</i></span> (길어진다)</td><td><span class="m"><span class="fr"><span><i>v</i></span><span><i>v</i> + <i>v</i><sub>S</sub></span></span> <i>f</i></span></td><td>낮아진다</td></tr>
+            <tr><td>관측자가 다가갈 때</td><td><span class="m" style="font-size:1.05rem"><i>λ</i></span> (변하지 않는다)</td><td><span class="m"><span class="fr"><span><i>v</i> + <i>v</i><sub>O</sub></span><span><i>v</i></span></span> <i>f</i></span></td><td>높아진다</td></tr>
+            <tr><td>관측자가 멀어질 때</td><td><span class="m" style="font-size:1.05rem"><i>λ</i></span> (변하지 않는다)</td><td><span class="m"><span class="fr"><span><i>v</i> − <i>v</i><sub>O</sub></span><span><i>v</i></span></span> <i>f</i></span></td><td>낮아진다</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">음원과 관측자가 서로 가까워지면 음원보다 큰 진동수를, 서로 멀어지면 음원보다 작은 진동수를 측정한다. 같은 방향으로 같은 속력으로 움직이면 진동수는 변하지 않는다.</p>
+    </section>
+  </div>
+
+  <footer>음원은 주기 <i>T</i>마다 파면을 하나씩 내보내고, 음파는 어느 방향으로나 같은 속력 <i>v</i>로 퍼져 나갑니다. 음원과 관측자의 속력은 음파의 속력보다 작습니다. 그래프는 음원이 내는 소리와 관측자의 위치에 도착하는 소리를 같은 시간 동안 나란히 그린 것입니다.</footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var FONT = "'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif";
+  var MATH = "'Cambria Math', Cambria, 'Times New Roman', serif";
+  var TAU = Math.PI * 2;
+
+  var TABS = [["still", "음원이 정지"], ["source", "음원이 움직일 때"], ["observer", "관측자가 움직일 때"], ["sum", "한눈에 정리"]];
+  /* 길이 단위: 장면의 폭 = 1 */
+  var V = 0.16, T0 = 0.8, F = 1 / T0, WIN = 4;
+  var st = { view: "still", t: 0, sp: "slow", centers: true, lam: true, scope: true, formula: true };
+  var playing = false, slow = false;
+
+  /* ---------- 운동과 소리: 그림과 그래프가 모두 이 함수들을 쓴다 ---------- */
+  function spd() { return V * (st.sp === "slow" ? 0.3 : 0.5); }
+  function cfg() {
+    if (st.view === "source") return { xs0: 0.22, vs: spd(), vo: 0, pre: 0, end: (0.75 - 0.22) / spd() };
+    if (st.view === "observer") return { xs0: 0.5, vs: 0, vo: spd(), pre: 8, end: (0.95 - 0.6) / spd() };
+    return { xs0: 0.5, vs: 0, vo: 0, pre: 0, end: Infinity };
+  }
+  function clampT(g, t) { return Math.max(0, Math.min(t, g.end)); }
+  function xS(g, t) { return g.xs0 + g.vs * clampT(g, t); }
+  function xO(g, k, t) { return st.view === "observer" ? (k === "A" ? 0.95 : 0.4) - g.vo * clampT(g, t) : (k === "A" ? 0.93 : 0.07); }
+  /* 시간 t 에 관측자 k 에게 도착한 소리가 음원을 떠난 시간 */
+  function emitTime(g, k, t) {
+    if (st.view === "observer") return t - Math.abs(xO(g, k, t) - g.xs0) / V;
+    var d = Math.abs(xO(g, k, 0) - g.xs0);
+    return k === "A" ? (V * t - d) / (V - g.vs) : (V * t - d) / (V + g.vs);
+  }
+  function sig(g, k, t) {
+    var tau = k === "S" ? t : emitTime(g, k, t);
+    return tau >= -g.pre ? Math.cos(TAU * F * tau) : null;
+  }
+  function fronts(g, t) {
+    var r = [], n1 = Math.floor(t / T0 + 1e-9), n0 = Math.max(Math.ceil(-g.pre / T0), Math.floor((t - 1.3 / V) / T0));
+    for (var n = n0; n <= n1; n++) { var tau = n * T0; r.push({ n: n, xc: xS(g, tau), r: V * (t - tau) }); }
+    return r;   /* 먼저 나온 파면부터 */
+  }
+
+  /* ---------- 그리기 도구 ---------- */
+  var col = {};
+  function colors() {
+    var cs = getComputedStyle(document.documentElement);
+    ["ink", "muted", "line", "accent", "surface", "bg", "mark", "work", "heat", "inner", "accent-soft"].forEach(function (n) { col[n] = cs.getPropertyValue("--" + n).trim(); });
+  }
+  function fit(cv) {
+    var w = cv.clientWidth, h = cv.clientHeight, dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+    return { c: c, w: w, h: h };
+  }
+  function text(c, s, x, y, color, align, size, weight) {
+    c.font = (weight || 600) + " " + (size || 15) + "px " + FONT; c.fillStyle = color; c.textAlign = align || "center"; c.textBaseline = "middle"; c.fillText(s, x, y);
+  }
+  /* 기호: 기울인 글자 + 아래 첨자. x 는 가운데 */
+  function sym(c, base, sub, x, y, color, size, bg) {
+    size = size || 20;
+    c.font = "italic 600 " + size + "px " + MATH; var wb = c.measureText(base).width;
+    c.font = "600 " + Math.round(size * 0.7) + "px " + MATH; var ws = sub ? c.measureText(sub).width : 0;
+    var x0 = x - (wb + ws) / 2;
+    if (bg) { c.fillStyle = col.surface; c.globalAlpha = 0.88; c.fillRect(x0 - 3, y - size * 0.7, wb + ws + 6, size * 1.5); c.globalAlpha = 1; }
+    c.fillStyle = color; c.textAlign = "left"; c.textBaseline = "middle";
+    c.font = "italic 600 " + size + "px " + MATH; c.fillText(base, x0, y);
+    if (sub) { c.font = "600 " + Math.round(size * 0.7) + "px " + MATH; c.fillText(sub, x0 + wb + 1, y + size * 0.3); }
+  }
+  function arrow(c, x1, y1, x2, y2, color, lw, both) {
+    var a = Math.atan2(y2 - y1, x2 - x1), hd = 7 + lw * 2.2;
+    function head(x, y, ang) { c.beginPath(); c.moveTo(x, y); c.lineTo(x - hd * Math.cos(ang - 0.42), y - hd * Math.sin(ang - 0.42)); c.lineTo(x - hd * Math.cos(ang + 0.42), y - hd * Math.sin(ang + 0.42)); c.closePath(); c.fill(); }
+    var sx = both ? x1 + hd * 0.7 * Math.cos(a) : x1, sy = both ? y1 + hd * 0.7 * Math.sin(a) : y1;
+    c.strokeStyle = color; c.fillStyle = color; c.lineWidth = lw; c.lineCap = "butt";
+    c.beginPath(); c.moveTo(sx, sy); c.lineTo(x2 - hd * 0.7 * Math.cos(a), y2 - hd * 0.7 * Math.sin(a)); c.stroke();
+    head(x2, y2, a); if (both) head(x1, y1, a + Math.PI);
+  }
+  function person(c, x, gy, color) {
+    c.fillStyle = color; c.strokeStyle = color; c.lineWidth = 4; c.lineCap = "round";
+    c.beginPath(); c.arc(x, gy - 52, 9, 0, TAU); c.fill();
+    c.beginPath(); c.moveTo(x, gy - 40); c.lineTo(x, gy - 18); c.lineTo(x - 6, gy - 1); c.moveTo(x, gy - 18); c.lineTo(x + 6, gy - 1); c.stroke();
+    c.beginPath(); c.moveTo(x - 9, gy - 26); c.lineTo(x, gy - 36); c.lineTo(x + 9, gy - 26); c.stroke();
+  }
+
+  /* ---------- 장면 ---------- */
+  function drawScene() {
+    var f = fit($("scene")), c = f.c, w = f.w, h = f.h, g = cfg(), t = clampT({ end: g.end }, st.t), nr = w < 500;
+    var m = 12, S = w - 2 * m, ay = h * 0.56, gy = ay + 30;
+    function X(x) { return m + x * S; }
+    var pal = [col.heat, col.work, col.accent], showC = st.centers && st.view === "source";
+    var fr = fronts(g, t), xs = xS(g, t), xa = xO(g, "A", t), xb = xO(g, "B", t);
+    /* 지면 */
+    c.strokeStyle = col.line; c.lineWidth = 2; c.beginPath(); c.moveTo(0, gy); c.lineTo(w, gy); c.stroke();
+    /* 파면 */
+    fr.forEach(function (p) {
+      if (p.r <= 0) return;
+      c.strokeStyle = showC ? pal[((p.n % 3) + 3) % 3] : col.accent; c.globalAlpha = showC ? 0.85 : 0.6; c.lineWidth = 2.5;
+      c.beginPath(); c.arc(X(p.xc), ay, p.r * S, 0, TAU); c.stroke(); c.globalAlpha = 1;
+    });
+    /* 파면이 출발한 곳 */
+    if (showC) {
+      var gap = g.vs * T0 * S, every = Math.max(1, Math.ceil(34 / gap));
+      fr.forEach(function (p) {
+        c.fillStyle = pal[((p.n % 3) + 3) % 3]; c.beginPath(); c.arc(X(p.xc), gy, 5, 0, TAU); c.fill();
+        if (p.n % every === 0) {
+          if (p.n === 0) sym(c, "0", "", X(p.xc), gy + 18, col.ink, 17);
+          else sym(c, (p.n === 1 ? "" : p.n) + "T", "", X(p.xc), gy + 18, col.ink, 17);
+        }
+      });
+    }
+    /* 파장 표시 */
+    if (st.lam) {
+      var yl = ay - Math.min(120, h * 0.3);
+      var mark = function (side) {
+        var sgn = side === "A" ? 1 : -1, lim = st.view === "observer" ? (side === "A" ? 0.97 : 0.03) : (side === "A" ? xa : xb);
+        for (var i = 0; i + 1 < fr.length; i++) {
+          var p1 = fr[i].xc + sgn * fr[i].r, p2 = fr[i + 1].xc + sgn * fr[i + 1].r;
+          if (fr[i + 1].r <= 0.012 || sgn * (p1 - lim) > 0) continue;
+          var x1 = X(Math.min(p1, p2)), x2 = X(Math.max(p1, p2));
+          c.save(); c.setLineDash([4, 4]); c.strokeStyle = col.ink; c.lineWidth = 1.5;
+          c.beginPath(); c.moveTo(x1, yl - 10); c.lineTo(x1, ay); c.moveTo(x2, yl - 10); c.lineTo(x2, ay); c.stroke(); c.restore();
+          if (x2 - x1 >= 30) arrow(c, x1, yl, x2, yl, col.ink, 2, true);
+          else { arrow(c, x1 - 20, yl, x1, yl, col.ink, 2); arrow(c, x2 + 20, yl, x2, yl, col.ink, 2); }
+          sym(c, "λ", st.view === "source" ? side : "", (x1 + x2) / 2, yl - 20, col.ink, 21, true);
+          return;
+        }
+      };
+      mark("A"); mark("B");
+    }
+    /* 음원 */
+    var sx = X(xs);
+    c.fillStyle = col.ink; c.beginPath(); c.roundRect(sx - 15, gy - 44, 30, 44, 5); c.fill();
+    c.fillStyle = col.surface; c.beginPath(); c.arc(sx, gy - 30, 6, 0, TAU); c.fill(); c.beginPath(); c.arc(sx, gy - 13, 8, 0, TAU); c.fill();
+    text(c, "S", sx, gy - 60, col.ink, "center", 19, 800);
+    if (st.view === "source") {
+      var ls = Math.max(36, g.vs / V * 150);
+      arrow(c, sx + 22, gy - 22, sx + 22 + ls, gy - 22, col.work, 4.5);
+      sym(c, "v", "S", sx + 22 + ls * 0.5, gy - 42, col.work, 21, true);
+    } else {
+      arrow(c, sx + 22, gy - 22, sx + 62, gy - 22, col.accent, 3.5);
+      arrow(c, sx - 22, gy - 22, sx - 62, gy - 22, col.accent, 3.5);
+      sym(c, "v", "", sx + 42, gy - 40, col.accent, 20, true); sym(c, "v", "", sx - 42, gy - 40, col.accent, 20, true);
+    }
+    /* 관측자 */
+    [["A", xa], ["B", xb]].forEach(function (o) {
+      var px = X(o[1]);
+      person(c, px, gy, col.ink);
+      text(c, o[0], px, gy - 78, col.ink, "center", 19, 800);
+      if (st.view === "observer") {
+        var lo = Math.max(36, g.vo / V * 150);
+        arrow(c, px - 16, gy - 22, px - 16 - lo, gy - 22, col.heat, 4.5);
+        sym(c, "v", "O", px - 16 - lo * 0.5, gy - 42, col.heat, 21, true);
+      }
+    });
+    if (!nr) {
+      if (st.view === "source") { text(c, "음원이 멀어진다", X(0.07) + 22, h - 16, col.muted, "left", 14, 600); text(c, "음원이 다가온다", X(0.93) - 22, h - 16, col.muted, "right", 14, 600); }
+      if (st.view === "observer") { text(c, "B: 음원에서 멀어진다", 14, h - 16, col.muted, "left", 14, 600); text(c, "A: 음원에 다가간다", w - 14, h - 16, col.muted, "right", 14, 600); }
+    }
+  }
+
+  /* ---------- 내는 소리와 듣는 소리 ---------- */
+  function drawScope() {
+    var f = fit($("scope")), c = f.c, w = f.w, h = f.h, g = cfg(), t = clampT({ end: g.end }, st.t);
+    var rows = [["S", "음원 S", "f", ""], ["A", "관측자 A", "f", "A"], ["B", "관측자 B", "f", "B"]];
+    var x0 = 82, x1 = w - 40, rh = h / 3;
+    rows.forEach(function (r, i) {
+      var cy = rh * (i + 0.5), amp = rh * 0.3;
+      text(c, r[1], 4, cy, col.ink, "left", 14, 700);
+      sym(c, r[2], r[3], w - 18, cy, col.ink, 20);
+      c.save(); c.setLineDash([4, 5]); c.strokeStyle = col.line; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x0, cy); c.lineTo(x1, cy); c.stroke(); c.restore();
+      c.strokeStyle = r[0] === "S" ? col.muted : col.accent; c.lineWidth = 2.5; c.lineJoin = "round"; c.beginPath();
+      var on = false;
+      for (var j = 0; j <= 300; j++) {
+        var tt = t - WIN + WIN * j / 300, s = sig(g, r[0], tt), px = x0 + (x1 - x0) * j / 300;
+        if (s === null) { on = false; continue; }
+        if (on) c.lineTo(px, cy - s * amp); else { c.moveTo(px, cy - s * amp); on = true; }
+      }
+      c.stroke();
+    });
+    text(c, "지금", x1, h - 9, col.muted, "center", 13, 600);
+    c.strokeStyle = col.muted; c.lineWidth = 1; c.beginPath(); c.moveTo(x1, 6); c.lineTo(x1, h - 18); c.stroke();
+  }
+
+  /* ---------- 관계식 ---------- */
+  function fr(a, b) { return '<span class="fr"><span>' + a + '</span><span>' + b + '</span></span>'; }
+  var vS = "<i>v</i><sub>S</sub>", vO = "<i>v</i><sub>O</sub>", fA = "<i>f</i><sub>A</sub>", fB = "<i>f</i><sub>B</sub>", lA = "<i>λ</i><sub>A</sub>", lB = "<i>λ</i><sub>B</sub>";
+  function card(who, lines, res) {
+    return '<div class="fcard"><span class="who">' + who + '</span>' + lines.map(function (l) { return '<div class="fline"><span class="m">' + l + '</span></div>'; }).join("") + (res ? '<span class="res">' + res + '</span>' : "") + '</div>';
+  }
+  function renderFormula() {
+    var s;
+    if (st.view === "still") {
+      s = card("정지한 음원이 내는 음파", ["<i>λ</i> = " + fr("<i>v</i>", "<i>f</i>") + " = <i>vT</i>"], "") +
+        card("관측자 A, B", [fA + " = " + fB + " = <i>f</i>"], "두 관측자 모두 <b>음원과 같은 진동수</b>의 음파를 듣는다.");
+    } else if (st.view === "source") {
+      s = card("A — 음원 S가 다가온다", [lA + " = <i>λ</i> − " + vS + "<i>T</i>", fA + " = " + fr("<i>v</i>", lA) + " = " + fr("<i>v</i>", "<i>v</i> − " + vS) + " <i>f</i>"], "음원보다 <b>큰</b> 진동수의 음파를 듣는다.") +
+        card("B — 음원 S가 멀어진다", [lB + " = <i>λ</i> + " + vS + "<i>T</i>", fB + " = " + fr("<i>v</i>", lB) + " = " + fr("<i>v</i>", "<i>v</i> + " + vS) + " <i>f</i>"], "음원보다 <b>작은</b> 진동수의 음파를 듣는다.");
+    } else {
+      s = card("A — 음원 S에 다가간다", ["음파의 상대적인 속력: <i>v</i> + " + vO, fA + " = " + fr("<i>v</i> + " + vO, "<i>λ</i>") + " = " + fr("<i>v</i> + " + vO, "<i>v</i>") + " <i>f</i>"], "파장 <i>λ</i>는 그대로, 음원보다 <b>큰</b> 진동수.") +
+        card("B — 음원 S에서 멀어진다", ["음파의 상대적인 속력: <i>v</i> − " + vO, fB + " = " + fr("<i>v</i> − " + vO, "<i>λ</i>") + " = " + fr("<i>v</i> − " + vO, "<i>v</i>") + " <i>f</i>"], "파장 <i>λ</i>는 그대로, 음원보다 <b>작은</b> 진동수.");
+    }
+    $("formula").innerHTML = s;
+  }
+
+  /* ---------- 조작부 ---------- */
+  function group(parent, label) {
+    var g = document.createElement("div"); g.className = "group";
+    var l = document.createElement("span"); l.className = "lbl"; l.textContent = label; g.appendChild(l);
+    parent.appendChild(g); return g;
+  }
+  function choice(parent, label, opts, cur, cb) {
+    var g = group(parent, label);
+    opts.forEach(function (o) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "tog"; b.textContent = o[1]; b.setAttribute("aria-pressed", String(o[0] === cur));
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call(g.querySelectorAll(".tog"), function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+        cb(o[0]);
+      });
+      g.appendChild(b);
+    });
+  }
+  function tog(parent, label, on, cb) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "tog"; b.textContent = label; b.setAttribute("aria-pressed", String(on));
+    b.addEventListener("click", function () { var v = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(v)); cb(v); });
+    parent.appendChild(b);
+  }
+  function restart() { st.t = 0; playing = false; updateButtons(); }
+  function panels() { $("scope-panel").hidden = !st.scope; $("formula-panel").hidden = !st.formula; }
+  function renderCtls() {
+    var box = $("ctls"); box.textContent = "";
+    if (st.view === "source") choice(box, "음원의 속력", [["slow", "느리게"], ["fast", "빠르게"]], st.sp, function (v) { st.sp = v; restart(); });
+    if (st.view === "observer") choice(box, "관측자의 속력", [["slow", "느리게"], ["fast", "빠르게"]], st.sp, function (v) { st.sp = v; restart(); });
+    var gv = group(box, "보기");
+    if (st.view === "source") tog(gv, "파면이 출발한 곳", st.centers, function (v) { st.centers = v; });
+    tog(gv, "파장", st.lam, function (v) { st.lam = v; });
+    tog(gv, "듣는 소리", st.scope, function (v) { st.scope = v; panels(); });
+    tog(gv, "관계식", st.formula, function (v) { st.formula = v; panels(); });
+  }
+  function updateButtons() { $("btn-play").textContent = playing ? "⏸ 멈춤" : "▶ 재생"; $("btn-slow").setAttribute("aria-pressed", String(slow)); }
+  function renderTabs() {
+    var box = $("cases"); box.textContent = "";
+    TABS.forEach(function (tb) {
+      var b = document.createElement("button"); b.type = "button"; b.id = "case-" + tb[0]; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(st.view === tb[0])); b.textContent = tb[1];
+      b.addEventListener("click", function () { go(tb[0]); }); box.appendChild(b);
+    });
+  }
+  function go(id) {
+    st.view = id;
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* 파일로 열 때 */ }
+    $("lab").hidden = id === "sum"; $("summary").hidden = id !== "sum";
+    renderTabs();
+    if (id === "sum") { playing = false; return; }
+    $("scene").setAttribute("aria-label", { still: "정지한 음원 S에서 퍼져 나가는 파면과 정지한 관측자 A, B", source: "오른쪽으로 움직이는 음원 S: 앞쪽 A에서는 파면 간격이 좁고 뒤쪽 B에서는 넓다", observer: "정지한 음원 S: 다가가는 관측자 A와 멀어지는 관측자 B" }[id]);
+    restart(); renderCtls(); renderFormula(); panels();
+  }
+
+  $("btn-play").addEventListener("click", function () {
+    if (!playing && st.t >= cfg().end) st.t = 0;
+    playing = !playing; updateButtons();
+  });
+  $("btn-reset").addEventListener("click", restart);
+  $("btn-step").addEventListener("click", function () { playing = false; st.t = Math.min(cfg().end, st.t + 0.1); updateButtons(); });
+  $("btn-slow").addEventListener("click", function () { slow = !slow; updateButtons(); });
+
+  var last = 0;
+  function frame(ms) {
+    var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms;
+    if (st.view !== "sum") {
+      if (playing) {
+        st.t += dt * (slow ? 0.3 : 1);
+        if (st.t >= cfg().end) { st.t = cfg().end; playing = false; updateButtons(); }
+      }
+      colors(); drawScene(); if (st.scope) drawScope();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  colors();
+  var h0 = location.hash.replace("#", "");
+  go(TABS.some(function (t) { return t[0] === h0; }) ? h0 : "still");
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
