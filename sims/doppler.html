@@ -241,7 +241,7 @@
     c.fillStyle = col.surface; c.beginPath(); c.arc(sx, gy - 30, 6, 0, TAU); c.fill(); c.beginPath(); c.arc(sx, gy - 13, 8, 0, TAU); c.fill();
     text(c, "S", sx, gy - 60, col.ink, "center", 19, 800);
     if (st.view === "source") {
-      var ls = Math.max(36, g.vs / V * 150);
+      var ls = Math.max(nr ? 24 : 36, g.vs / V * (nr ? 70 : 150));
       arrow(c, sx + 22, gy - 22, sx + 22 + ls, gy - 22, col.work, 4.5);
       sym(c, "v", "S", sx + 22 + ls * 0.5, gy - 42, col.work, 21, true);
     } else {
@@ -255,7 +255,7 @@
       person(c, px, gy, col.ink);
       text(c, o[0], px, gy - 78, col.ink, "center", 19, 800);
       if (st.view === "observer") {
-        var lo = Math.max(36, g.vo / V * 150);
+        var lo = Math.max(nr ? 24 : 36, g.vo / V * (nr ? 70 : 150));
         arrow(c, px - 16, gy - 22, px - 16 - lo, gy - 22, col.heat, 4.5);
         sym(c, "v", "O", px - 16 - lo * 0.5, gy - 42, col.heat, 21, true);
       }
