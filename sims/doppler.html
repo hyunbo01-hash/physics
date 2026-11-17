@@ -7,19 +7,13 @@
 <title>도플러 효과 탐구</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="../assets/sim.css?v=6">
+<link rel="stylesheet" href="../assets/demo.css?v=1">
 <style>
-.stack { display: flex; flex-direction: column; gap: 1rem; }
 .bench { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
 @media (max-width: 56rem) { .bench { grid-template-columns: minmax(0, 1fr); } }
 #scene { aspect-ratio: 16 / 9; touch-action: pan-y; }
 #scope { aspect-ratio: 16 / 7; }
 @media (max-width: 40rem) { #scene { aspect-ratio: 4 / 3; } }
-.bar { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
-.group { display: flex; flex-wrap: wrap; gap: 0.375rem; align-items: center; }
-.group .lbl { font-size: 0.875rem; font-weight: 600; color: var(--muted); margin-right: 0.125rem; }
-.tog { font: inherit; font-size: 0.9375rem; font-weight: 500; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.375rem 0.75rem; cursor: pointer; }
-.tog:hover { border-color: var(--accent); }
-.tog[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
 
 /* 수식 */
 .m { font-family: "Cambria Math", Cambria, "Times New Roman", serif; font-size: 1.1875rem; white-space: nowrap; }
@@ -40,16 +34,16 @@
 </head>
 <body>
 <div class="page">
-  <header class="sim-head">
-    <a class="back" href="../index.html">← 물리 수업 자료실</a>
-    <span class="lesson-code">역학과 에너지 · III-2-01</span>
-    <h1>도플러 효과 탐구</h1>
+  <header class="top">
+    <div class="ttl">
+      <div class="meta"><a href="../index.html">← 물리 수업 자료실</a><span>역학과 에너지 III-2-01</span></div>
+      <h1>도플러 효과 탐구</h1>
+    </div>
+    <div class="tabs" id="cases" role="tablist" aria-label="장면 고르기"></div>
   </header>
 
-  <div class="seg" id="cases" role="tablist" aria-label="장면 고르기"></div>
-
   <div class="bench" id="lab">
-    <section class="panel stack" aria-label="음원과 관측자, 퍼져 나가는 파면">
+    <section class="stage" aria-label="음원과 관측자, 퍼져 나가는 파면">
       <canvas id="scene" role="img" aria-label="음원과 관측자, 퍼져 나가는 파면"></canvas>
       <div class="bar">
         <div class="group">
@@ -317,7 +311,7 @@
     parent.appendChild(g); return g;
   }
   function choice(parent, label, opts, cur, cb) {
-    var g = group(parent, label);
+    var g = group(parent, label); g.classList.add("pick");
     opts.forEach(function (o) {
       var b = document.createElement("button"); b.type = "button"; b.className = "tog"; b.textContent = o[1]; b.setAttribute("aria-pressed", String(o[0] === cur));
       b.addEventListener("click", function () {
