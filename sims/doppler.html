@@ -13,7 +13,7 @@
 @media (max-width: 56rem) { .bench { grid-template-columns: minmax(0, 1fr); } }
 #scene { aspect-ratio: 16 / 9; touch-action: pan-y; }
 #scope { aspect-ratio: 16 / 7; }
-@media (max-width: 40rem) { #scene { aspect-ratio: 4 / 3; } }
+@media (max-width: 40rem) { #scene { aspect-ratio: 4 / 3; } #scene.sq { aspect-ratio: 4 / 5; } }
 
 /* 수식 */
 .m { font-family: "Cambria Math", Cambria, "Times New Roman", serif; font-size: 1.1875rem; white-space: nowrap; }
@@ -470,6 +470,7 @@
     renderTabs();
     if (id === "sum") { playing = false; return; }
     $("scene").setAttribute("aria-label", { still: "정지한 음원 S에서 퍼져 나가는 파면과 정지한 관측자 A, B", source: "오른쪽으로 움직이는 음원 S: 앞쪽 A에서는 파면 간격이 좁고 뒤쪽 B에서는 넓다", observer: "정지한 음원 S: 다가가는 관측자 A와 멀어지는 관측자 B", shock: "비행기가 음속보다 느리게, 음속과 같게, 음속보다 빠르게 날 때의 파면과 충격파" }[id]);
+    $("scene").classList.toggle("sq", id === "shock");
     restart(); renderCtls(); renderFormula(); panels();
   }
 
