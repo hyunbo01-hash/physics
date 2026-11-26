@@ -322,8 +322,10 @@
         var th = Math.asin(V / g.vs), L = g.vs * t * Math.cos(th) * S;
         var ex = -Math.cos(th), ey = Math.sin(th);
         c.beginPath(); c.moveTo(sx, py); c.lineTo(sx + ex * L, py - ey * L); c.moveTo(sx, py); c.lineTo(sx + ex * L, py + ey * L); c.stroke();
-        var lx = sx + ex * L * 0.55, ly = py + ey * L * 0.55;
-        text(c, "충격파", lx - 12, ly + 4, col.heat, "right", nr ? 15 : 17, 800);
+        var lx = sx + ex * L * 0.5, ly = py - ey * L * 0.5;
+        c.font = "800 " + (nr ? 15 : 17) + "px " + FONT; var lw2 = c.measureText("충격파").width;
+        c.fillStyle = col.surface; c.globalAlpha = 0.9; c.fillRect(lx + 10, ly - 13, lw2 + 8, 26); c.globalAlpha = 1;
+        text(c, "충격파", lx + 14, ly, col.heat, "left", nr ? 15 : 17, 800);
         /* 원뿔의 반각 θ */
         if (st.formula) {
           c.strokeStyle = col.heat; c.lineWidth = 1.5; c.beginPath(); c.arc(sx, py, 46, Math.PI - th, Math.PI); c.stroke();
@@ -341,6 +343,7 @@
     text(c, "S", sx - 4, py - 22, col.ink, "center", 17, 800);
     /* 속력 비교: 왼쪽 위 */
     var u = nr ? 60 : 110, bx = 16;
+    c.fillStyle = col.surface; c.globalAlpha = 0.9; c.fillRect(6, 6, 84 + u * Math.max(1, g.vs / V), 60); c.globalAlpha = 1;
     arrow(c, bx + 32, 22, bx + 32 + u, 22, col.accent, 4);
     sym(c, "v", "", bx + 12, 22, col.accent, 20);
     text(c, "음파", bx + 40 + u, 22, col.accent, "left", 14, 700);
