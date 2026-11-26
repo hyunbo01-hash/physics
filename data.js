@@ -55,6 +55,6 @@ window.SITE = {
       desc: "수업 시연용: 횡파와 종파의 진행 방향·진동 방향, 고정단·자유단 반사, 굵기가 다른 줄 사이의 반사와 투과", added: "2026-11-11" },
     { title: "도플러 효과 탐구", type: "sim", subject: "mechanics", lesson: "III-2-01",
       href: "sims/doppler.html", thumb: "assets/thumbs/doppler.svg",
-      desc: "수업 시연용: 음원이 움직일 때와 관측자가 움직일 때의 파면·파장·진동수, 관계식 정리", added: "2026-11-16" }
+      desc: "수업 시연용: 음원이 움직일 때와 관측자가 움직일 때의 파면·파장·진동수, 충격파(소닉 붐), 관계식 정리", added: "2026-11-16" }
   ]
 };
