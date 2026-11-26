@@ -261,7 +261,7 @@
           var x1 = (a.r * a.r - b.r * b.r + D * D) / (2 * D), y2 = a.r * a.r - x1 * x1;
           if (y2 <= 0) return;
           var px = X(S1X + x1), py = Y(Math.sqrt(y2));
-          if (py < 4) return;
+          if (py < 4 || y2 < 0.0003) return;   /* 스피커를 잇는 바닥선 위의 점은 빼고 */
           var up = a.crest === b.crest;
           c.fillStyle = up ? col.heat : col.accent; c.strokeStyle = col.surface; c.lineWidth = 1.5;
           c.beginPath(); c.arc(px, py, nr ? 4 : 5.5, 0, TAU); c.fill(); c.stroke();
