@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="보강 간섭과 상쇄 간섭, 두 스피커에서 나온 음파의 경로차와 간섭 무늬를 보여 주는 수업 시연용 음파의 간섭 시뮬레이션">
+<title>음파의 간섭 탐구</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/sim.css?v=7">
+<link rel="stylesheet" href="../assets/demo.css?v=1">
+<style>
+.bench { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+@media (max-width: 56rem) { .bench { grid-template-columns: minmax(0, 1fr); } }
+#scene { aspect-ratio: 16 / 9; touch-action: pan-y; }
+#scene.drag { touch-action: none; }
+#walk { aspect-ratio: 16 / 9; }
+@media (max-width: 40rem) { #scene { aspect-ratio: 4 / 3; } #scene.sq { aspect-ratio: 4 / 5; } }
+
+/* 수식 */
+.m { font-family: "Cambria Math", Cambria, "Times New Roman", serif; font-size: 1.1875rem; white-space: nowrap; }
+.m i { font-style: italic; }
+.m sub { font-size: 0.7em; font-style: normal; }
+.fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 0.15em; }
+.fr > span { padding: 0 0.3em; line-height: 1.25; }
+.fr > span + span { border-top: 1.5px solid currentColor; }
+.fcard { border: 1px solid var(--line); border-radius: 10px; padding: 0.5rem 0.875rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.fcard.on { border: 2px solid var(--ink); }
+.fcard.dim { opacity: 0.45; }
+.fcard .who { font-weight: 800; font-size: 1rem; }
+.fcard .who.up { color: var(--heat); }
+.fcard .who.down { color: var(--accent); }
+.fcard .line { font-size: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; }
+.fcard .res { font-size: 0.9375rem; color: var(--muted); }
+.fcard .res b { color: var(--ink); }
+.btn.sm { font-size: 0.9375rem; padding: 0.375rem 0.875rem; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <div class="ttl">
+      <div class="meta"><a href="../index.html">← 물리 수업 자료실</a><span>역학과 에너지 III-2-02</span></div>
+      <h1>음파의 간섭 탐구</h1>
+    </div>
+    <div class="tabs" id="cases" role="tablist" aria-label="장면 고르기"></div>
+  </header>
+
+  <div class="bench" id="lab">
+    <section class="stage" aria-label="겹쳐지는 두 음파">
+      <canvas id="scene" role="img" aria-label="겹쳐지는 두 음파"></canvas>
+      <div class="bar">
+        <div class="group">
+          <button class="btn primary" type="button" id="btn-play">▶ 재생</button>
+          <button class="btn" type="button" id="btn-reset">처음으로</button>
+          <button class="btn" type="button" id="btn-step">조금씩 ▶|</button>
+          <button class="tog" type="button" id="btn-slow" aria-pressed="false">느리게</button>
+        </div>
+      </div>
+      <div class="bar" id="ctls"></div>
+    </section>
+    <div class="stack">
+      <section class="panel stack" id="walk-panel" aria-label="P가 걸으며 듣는 소리 크기">
+        <h2>P에서 듣는 소리 크기</h2>
+        <canvas id="walk" role="img" aria-label="P의 위치에 따른 소리 크기 그래프"></canvas>
+        <p class="note">P를 옮기거나 「가로질러 걷기」로 걸어가면, 지나간 자리의 소리 크기가 그려집니다.</p>
+      </section>
+      <section class="panel stack" id="formula-panel" aria-label="관계식">
+        <h2>관계식</h2>
+        <div class="stack" id="formula" style="gap: 0.5rem"></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>두 스피커 S₁, S₂는 진동수·진폭·위상이 같은 음파를 냅니다. 시연을 위해 거리에 따라 음파가 약해지는 것은 생각하지 않았고, 두 스피커 사이의 거리는 2λ입니다. 파면 그림에서 실선은 마루, 점선은 골입니다.</footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var FONT = "'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif";
+  var MATH = "'Cambria Math', Cambria, 'Times New Roman', serif";
+  var TAU = Math.PI * 2;
+
+  var TABS = [["sum", "보강·상쇄 간섭"], ["paths", "두 스피커와 경로차"]];
+  /* 길이 단위: 무대의 폭 = 1. 파장 λ, 두 스피커 사이 거리 D = 2λ, 음파의 속력 V (주기 1초) */
+  var LAM = 0.1, D = 0.2, V = 0.1, T0 = LAM / V;
+  var S1X = 0.5 - D / 2, S2X = 0.5 + D / 2;
+  var P1 = null, P2 = null;   /* 교과서 위치: 아래에서 계산 */
+  var st = { view: "sum", t: 0, phase: "same", crestLines: true, overlay: false,
+    fronts: true, dots: true, lines: false, map: false, walk: false, formula: true,
+    P: { x: 0, y: 0 }, wdir: 1, trace: [], traceY: null };
+  var playing = false, slow = false;
+
+  /* ---------- 계산: 그림과 그래프가 모두 이 함수들을 쓴다 ---------- */
+  function r1(x, y) { return Math.hypot(x - S1X, y); }
+  function r2(x, y) { return Math.hypot(x - S2X, y); }
+  function pathDiff(x, y) { return Math.abs(r1(x, y) - r2(x, y)); }
+  /* 두 음파가 모두 도착했을 때의 소리 크기(0~1): 1 = 보강, 0 = 상쇄 */
+  function loud(x, y) { return Math.abs(Math.cos(Math.PI * pathDiff(x, y) / LAM)); }
+  function arrived(x, y, t) { var n = (r1(x, y) <= V * t) + (r2(x, y) <= V * t); return n; }
+  function heard(x, y, t) { var n = arrived(x, y, t); return n === 2 ? loud(x, y) : n === 1 ? 0.5 : 0; }
+  /* 경로차가 Δ 인 쌍곡선 위, 높이 y 인 점의 x (오른쪽 가지) */
+  function hypX(delta, y) {
+    var a = delta / 2, c = D / 2, b2 = c * c - a * a;
+    return a === 0 ? 0 : a * Math.sqrt(1 + y * y / b2);
+  }
+  P1 = { x: 0.5 - hypX(0.5 * LAM, 0.34), y: 0.34 };   /* 경로차 ½λ: 상쇄 */
+  P2 = { x: 0.5 + hypX(1 * LAM, 0.2), y: 0.2 };      /* 경로차 λ: 보강 */
+  /* 경로차를 λ 의 배수로 읽기 좋게 */
+  function lamText(q) {
+    var h = Math.round(q * 2) / 2;
+    if (Math.abs(q - h) < 0.06) {
+      var s = h === 0 ? "0" : h === 0.5 ? "½λ" : h === 1 ? "λ" : h === 1.5 ? "³⁄₂λ" : h === 2 ? "2λ" : h + "λ";
+      return { s: s, kind: Math.round(h * 2) % 2 === 0 ? "up" : "down" };
+    }
+    return { s: "약 " + q.toFixed(1) + "λ", kind: "mid" };
+  }
+
+  /* ---------- 그리기 도구 ---------- */
+  var col = {};
+  function colors() {
+    var cs = getComputedStyle(document.documentElement);
+    ["ink", "muted", "line", "accent", "surface", "bg", "mark", "work", "heat", "inner", "accent-soft"].forEach(function (n) { col[n] = cs.getPropertyValue("--" + n).trim(); });
+  }
+  function fit(cv) {
+    var w = cv.clientWidth, h = cv.clientHeight, dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+    return { c: c, w: w, h: h };
+  }
+  function text(c, s, x, y, color, align, size, weight) {
+    c.font = (weight || 600) + " " + (size || 15) + "px " + FONT; c.fillStyle = color; c.textAlign = align || "center"; c.textBaseline = "middle"; c.fillText(s, x, y);
+  }
+  /* 아래 첨자가 있는 글자 (S₁ 등). 왼쪽 정렬, 끝 x 를 돌려준다 */
+  function subT(c, base, sub, rest, x, y, color, size, weight) {
+    size = size || 16; weight = weight || 700;
+    c.fillStyle = color; c.textAlign = "left"; c.textBaseline = "middle";
+    c.font = weight + " " + size + "px " + FONT; c.fillText(base, x, y); x += c.measureText(base).width;
+    c.font = weight + " " + Math.round(size * 0.68) + "px " + FONT; c.fillText(sub, x + 0.5, y + size * 0.3); x += c.measureText(sub).width + 1;
+    if (rest) { c.font = weight + " " + size + "px " + FONT; c.fillText(rest, x, y); x += c.measureText(rest).width; }
+    return x;
+  }
+  function subW(c, base, sub, rest, size, weight) {
+    c.font = (weight || 700) + " " + size + "px " + FONT; var w = c.measureText(base).width + (rest ? c.measureText(rest).width : 0);
+    c.font = (weight || 700) + " " + Math.round(size * 0.68) + "px " + FONT; return w + c.measureText(sub).width + 1.5;
+  }
+  function chip(c, x, y, wd, ht) { c.fillStyle = col.surface; c.globalAlpha = 0.92; c.beginPath(); c.roundRect(x, y, wd, ht, 8); c.fill(); c.globalAlpha = 1; c.strokeStyle = col.ink; c.lineWidth = 1.5; c.stroke(); }
+  function bar(c, x, y, wd, ht, v, color) {
+    c.strokeStyle = col.ink; c.lineWidth = 1.5; c.strokeRect(x, y, wd, ht);
+    c.fillStyle = color; var hh = Math.max(0, Math.min(1, v)) * (ht - 4); c.fillRect(x + 2, y + ht - 2 - hh, wd - 4, hh);
+  }
+
+  /* ---------- 장면 1: 보강·상쇄 간섭 ---------- */
+  function drawSum(c, w, h, t) {
+    var nr = w < 500, L = nr ? 64 : 120, R = w - (nr ? 56 : 86), lp = (R - L) / (nr ? 2.5 : 3.5);
+    var phi = st.phase === "same" ? 0 : Math.PI;
+    var rows = [h * 0.13, h * 0.35, h * 0.7], A = h * 0.075;
+    function y(i, x) { return Math.cos(TAU * ((x - L) / lp - t / T0) + (i === 1 ? phi : 0)); }
+    function curve(cy, f, amp, color, lw, dash) {
+      c.save(); if (dash) c.setLineDash(dash); c.strokeStyle = color; c.lineWidth = lw; c.lineJoin = "round"; c.beginPath();
+      for (var x = L; x <= R; x += 2) { var yy = cy - amp * f(x); if (x === L) c.moveTo(x, yy); else c.lineTo(x, yy); }
+      c.stroke(); c.restore();
+    }
+    rows.forEach(function (cy) { c.save(); c.setLineDash([4, 5]); c.strokeStyle = col.line; c.lineWidth = 1.5; c.beginPath(); c.moveTo(L, cy); c.lineTo(R, cy); c.stroke(); c.restore(); });
+    /* 마루 위치: S₁ 음파의 마루를 세로로 이어 본다 */
+    if (st.crestLines) {
+      /* cos(2π((x − L)/lp − t/T)) = 1 인 곳: x = L + lp·(k + t/T 의 소수 부분) */
+      for (var k = -1; k < 5; k++) {
+        var xc = L + lp * (k + (t / T0) % 1);
+        if (xc < L || xc > R) continue;
+        c.save(); c.setLineDash([3, 5]); c.strokeStyle = col.muted; c.lineWidth = 1.2;
+        c.beginPath(); c.moveTo(xc, rows[0] - A - 6); c.lineTo(xc, rows[2] + 2.2 * A); c.stroke(); c.restore();
+      }
+    }
+    curve(rows[0], function (x) { return y(0, x); }, A, col.accent, 3);
+    curve(rows[1], function (x) { return y(1, x); }, A, col.mark, 3);
+    if (st.overlay) {
+      curve(rows[2], function (x) { return y(0, x); }, A, col.accent, 2.5, [7, 5]);
+      curve(rows[2], function (x) { return y(1, x); }, A, col.mark, 2.5, [7, 5]);
+    }
+    curve(rows[2], function (x) { return y(0, x) + y(1, x); }, A, col.ink, 5);
+    /* 이름표 */
+    var lx = 6, sz = nr ? 14 : 16;
+    if (nr) { subT(c, "S", "1", "", lx, rows[0], col.accent, 17); subT(c, "S", "2", "", lx, rows[1], col.mark, 17); text(c, "합", lx, rows[2], col.ink, "left", 16, 800); }
+    else { subT(c, "S", "1", "의 음파", lx, rows[0], col.accent, sz); subT(c, "S", "2", "의 음파", lx, rows[1], col.mark, sz); text(c, "두 음파의 합", lx, rows[2], col.ink, "left", sz, 800); }
+    text(c, st.phase === "same" ? "보강 간섭" : "상쇄 간섭", L, rows[2] - 2.3 * A, st.phase === "same" ? col.heat : col.accent, "left", nr ? 16 : 19, 800);
+    /* 소리 크기 */
+    var bx = R + (nr ? 18 : 30), bw = nr ? 20 : 26, bh = 4.2 * A;
+    bar(c, bx, rows[2] - bh / 2, bw, bh, Math.abs(Math.cos(phi / 2)), col.heat);
+    text(c, "소리", bx + bw / 2, rows[2] + bh / 2 + 14, col.ink, "center", 14, 700);
+    text(c, "크기", bx + bw / 2, rows[2] + bh / 2 + 30, col.ink, "center", 14, 700);
+  }
+
+  /* ---------- 장면 2: 두 스피커와 경로차 ---------- */
+  var mapCache = { key: "", cv: null };
+  function geo(w, h) { var m = 14, S = w - 2 * m, y0 = h - 46; return { m: m, S: S, y0: y0, top: (y0 - 8) / S }; }
+  function patternMap(w, h, G) {
+    var key = w + "x" + h; if (mapCache.key === key) return mapCache.cv;
+    var cell = 4, cw = Math.ceil(w / cell), ch = Math.ceil(h / cell), cv = document.createElement("canvas"); cv.width = cw; cv.height = ch;
+    var cx = cv.getContext("2d"), img = cx.createImageData(cw, ch), d = img.data;
+    for (var j = 0; j < ch; j++) for (var i = 0; i < cw; i++) {
+      var x = (i * cell + cell / 2 - G.m) / G.S, y = (G.y0 - j * cell - cell / 2) / G.S, p = (j * cw + i) * 4;
+      if (y <= 0) continue;
+      var a = loud(x, y);
+      d[p] = 220; d[p + 1] = 63; d[p + 2] = 69; d[p + 3] = Math.round(a * a * 0.42 * 255);
+    }
+    cx.putImageData(img, 0, 0); mapCache.key = key; mapCache.cv = cv; return cv;
+  }
+  function speaker(c, x, y, color) {
+    c.fillStyle = color;
+    c.beginPath(); c.roundRect(x - 12, y + 2, 24, 18, 3); c.fill();
+    c.beginPath(); c.moveTo(x - 8, y + 2); c.lineTo(x - 18, y - 12); c.lineTo(x + 18, y - 12); c.lineTo(x + 8, y + 2); c.closePath(); c.fill();
+  }
+  function drawPaths(c, w, h, t) {
+    var G = geo(w, h), S = G.S, nr = w < 500;
+    function X(x) { return G.m + x * S; }
+    function Y(y) { return G.y0 - y * S; }
+    var R = V * t, Rmax = Math.hypot(1, G.top) + 0.05;
+    /* 간섭 무늬 */
+    if (st.map && R > 0) {
+      c.save();
+      c.beginPath(); c.arc(X(S1X), Y(0), R * S, 0, TAU); c.clip();
+      c.beginPath(); c.arc(X(S2X), Y(0), R * S, 0, TAU); c.clip();
+      c.imageSmoothingEnabled = true; c.drawImage(patternMap(w, h, G), 0, 0, Math.ceil(w / 4) * 4, Math.ceil(h / 4) * 4);
+      c.restore();
+    }
+    /* 보강·상쇄 선 */
+    if (st.lines) {
+      [[0, "up"], [0.5, "down"], [1, "up"], [1.5, "down"]].forEach(function (q) {
+        var dl = q[0] * LAM, up = q[1] === "up", color = up ? col.heat : col.accent, lab = lamText(q[0]).s;
+        c.save(); c.strokeStyle = color; c.lineWidth = up ? 2.5 : 2; if (!up) c.setLineDash([8, 6]);
+        [-1, 1].forEach(function (sg) {
+          if (q[0] === 0 && sg < 0) return;
+          c.beginPath();
+          for (var i = 0; i <= 120; i++) { var yy = G.top * i / 120, xx = 0.5 + sg * hypX(dl, yy); if (i) c.lineTo(X(xx), Y(yy)); else c.moveTo(X(xx), Y(yy)); }
+          c.stroke();
+          var xt = 0.5 + sg * hypX(dl, G.top * 0.93);
+          if (xt > 0.04 && xt < 0.96) { c.setLineDash([]); var tw = 30; c.fillStyle = col.surface; c.fillRect(X(xt) - tw / 2, Y(G.top * 0.93) - 11, tw, 22); text(c, lab, X(xt), Y(G.top * 0.93), color, "center", 15, 800); if (!up) c.setLineDash([8, 6]); }
+        });
+        c.restore();
+      });
+    }
+    /* 파면: 마루 실선, 골 점선 */
+    var radii = [];
+    var n0 = Math.max(0, Math.floor((t - Rmax / V) / T0) - 1);
+    for (var n = n0; n * T0 <= t; n++) {
+      [[0, true], [0.5, false]].forEach(function (k) { var r = V * (t - (n + k[0]) * T0); if (r > 0 && r < Rmax) radii.push({ r: r, crest: k[1] }); });
+    }
+    if (st.fronts) {
+      [[S1X, col.accent], [S2X, col.mark]].forEach(function (s) {
+        radii.forEach(function (q) {
+          c.save(); c.strokeStyle = s[1]; c.globalAlpha = q.crest ? 0.75 : 0.6; c.lineWidth = q.crest ? 2.2 : 1.8; if (!q.crest) c.setLineDash([6, 5]);
+          c.beginPath(); c.arc(X(s[0]), Y(0), q.r * S, Math.PI, TAU); c.stroke(); c.restore();
+        });
+      });
+    }
+    /* 마루+마루·골+골 = 보강(빨강), 마루+골 = 상쇄(파랑) */
+    if (st.dots) {
+      radii.forEach(function (a) {
+        radii.forEach(function (b) {
+          var x1 = (a.r * a.r - b.r * b.r + D * D) / (2 * D), y2 = a.r * a.r - x1 * x1;
+          if (y2 <= 0) return;
+          var px = X(S1X + x1), py = Y(Math.sqrt(y2));
+          if (py < 4) return;
+          var up = a.crest === b.crest;
+          c.fillStyle = up ? col.heat : col.accent; c.strokeStyle = col.surface; c.lineWidth = 1.5;
+          c.beginPath(); c.arc(px, py, nr ? 4 : 5.5, 0, TAU); c.fill(); c.stroke();
+        });
+      });
+    }
+    /* 스피커 */
+    c.strokeStyle = col.line; c.lineWidth = 2; c.beginPath(); c.moveTo(0, G.y0 + 22); c.lineTo(w, G.y0 + 22); c.stroke();
+    speaker(c, X(S1X), G.y0, col.ink); speaker(c, X(S2X), G.y0, col.ink);
+    subT(c, "S", "1", "", X(S1X) - 22 - subW(c, "S", "1", "", 18), G.y0 + 8, col.accent, 18, 800);
+    subT(c, "S", "2", "", X(S2X) + 22, G.y0 + 8, col.mark, 18, 800);
+    /* 듣는 사람 P */
+    var P = st.P, px = X(P.x), py = Y(P.y);
+    c.save(); c.strokeStyle = col.accent; c.lineWidth = 2.5; c.beginPath(); c.moveTo(X(S1X), G.y0 - 12); c.lineTo(px, py); c.stroke();
+    c.strokeStyle = col.mark; c.beginPath(); c.moveTo(X(S2X), G.y0 - 12); c.lineTo(px, py); c.stroke(); c.restore();
+    c.fillStyle = col.ink; c.beginPath(); c.arc(px, py, 10, 0, TAU); c.fill();
+    c.strokeStyle = col.surface; c.lineWidth = 2; c.beginPath(); c.arc(px, py, 10, 0, TAU); c.stroke();
+    text(c, "P", px, py - 22, col.ink, "center", 18, 800);
+    /* 경로차와 소리 크기 */
+    var q = lamText(pathDiff(P.x, P.y) / LAM), v = heard(P.x, P.y, t);
+    var res = q.kind === "up" ? "보강 간섭" : q.kind === "down" ? "상쇄 간섭" : "보강과 상쇄 사이";
+    var rc = q.kind === "up" ? col.heat : q.kind === "down" ? col.accent : col.muted;
+    var fs = nr ? 14 : 16, l1 = "경로차 = " + q.s;
+    c.font = "800 " + fs + "px " + FONT; var bw = Math.max(c.measureText(l1).width, c.measureText(res).width) + 58, bh = fs * 2 + 24;
+    var bx = px + 22, by = py - bh / 2;
+    if (bx + bw > w - 6) bx = px - 22 - bw;
+    by = Math.max(6, Math.min(by, G.y0 - bh - 30));
+    chip(c, bx, by, bw, bh);
+    text(c, l1, bx + 12, by + 8 + fs * 0.6, col.ink, "left", fs, 800);
+    text(c, res, bx + 12, by + 16 + fs * 1.6, rc, "left", fs, 800);
+    bar(c, bx + bw - 30, by + 8, 18, bh - 16, v, col.heat);
+  }
+
+  /* ---------- P에서 듣는 소리 크기 그래프 ---------- */
+  function drawWalk() {
+    var f = fit($("walk")), c = f.c, w = f.w, h = f.h, x0 = 52, x1 = w - 14, yb = h - 34, yt = 14;
+    function GX(x) { return x0 + x * (x1 - x0); }
+    function GY(v) { return yb - v * (yb - yt); }
+    c.strokeStyle = col.ink; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x0, yt); c.lineTo(x0, yb); c.lineTo(x1, yb); c.stroke();
+    text(c, "크다", x0 - 8, GY(1), col.ink, "right", 14, 700); text(c, "작다", x0 - 8, GY(0) - 8, col.ink, "right", 14, 700);
+    [[S1X, "1", col.accent], [S2X, "2", col.mark]].forEach(function (s) {
+      c.strokeStyle = col.muted; c.lineWidth = 1.5; c.beginPath(); c.moveTo(GX(s[0]), yb); c.lineTo(GX(s[0]), yb + 6); c.stroke();
+      var sw = subW(c, "S", s[1], "", 15); subT(c, "S", s[1], "", GX(s[0]) - sw / 2, yb + 18, s[2], 15, 800);
+    });
+    text(c, "P의 가로 위치", x1, yb + 18, col.muted, "right", 13, 600);
+    var tr = st.trace;
+    if (tr.length > 1) {
+      c.strokeStyle = col.heat; c.lineWidth = 3; c.lineJoin = "round"; c.beginPath();
+      tr.forEach(function (p, i) { if (i && Math.abs(p[0] - tr[i - 1][0]) > 0.05) c.moveTo(GX(p[0]), GY(p[1])); else if (i) c.lineTo(GX(p[0]), GY(p[1])); else c.moveTo(GX(p[0]), GY(p[1])); });
+      c.stroke();
+    }
+    var P = st.P, v = heard(P.x, P.y, st.t);
+    c.fillStyle = col.ink; c.beginPath(); c.arc(GX(P.x), GY(v), 6, 0, TAU); c.fill();
+  }
+  function record() {
+    var P = st.P;
+    if (arrived(P.x, P.y, st.t) < 2) return;
+    if (st.traceY === null || Math.abs(st.traceY - P.y) > 0.004) { st.trace = []; st.traceY = P.y; }
+    var last = st.trace[st.trace.length - 1];
+    if (!last || Math.abs(last[0] - P.x) > 0.002) st.trace.push([P.x, loud(P.x, P.y)]);
+    if (st.trace.length > 3000) st.trace.shift();
+  }
+
+  /* ---------- 관계식 ---------- */
+  function fr(a, b) { return '<span class="fr"><span>' + a + '</span><span>' + b + '</span></span>'; }
+  function card(who, cls, lines, res, state) {
+    return '<div class="fcard' + (state ? " " + state : "") + '"><span class="who ' + cls + '">' + who + '</span>' + lines.map(function (l) { return '<div class="line">' + l + '</div>'; }).join("") + (res ? '<span class="res">' + res + '</span>' : "") + '</div>';
+  }
+  function renderFormula() {
+    var s, same = st.phase === "same";
+    if (st.view === "sum") {
+      s = card("보강 간섭", "up", ["두 음파가 <b>같은 위상</b>으로 만난다"], "마루와 마루, 골과 골이 겹쳐 <b>진폭이 커지고</b> 소리가 크게 들린다.", same ? "on" : "dim") +
+        card("상쇄 간섭", "down", ["두 음파가 <b>반대 위상</b>으로 만난다"], "마루와 골이 겹쳐 <b>진폭이 작아지고</b> 소리가 작게 들린다.", same ? "dim" : "on");
+    } else {
+      var lam2 = '<span class="m">' + fr("<i>λ</i>", "2") + '</span>';
+      s = card("경로차", "", ['<span class="m">|S<sub>1</sub>P − S<sub>2</sub>P|</span>'], "두 스피커에서 P까지의 거리의 차") +
+        card("보강 간섭", "up", ['경로차 = ' + lam2 + ' × 0, 2, 4, …'], "반파장의 <b>짝수</b> 배 · P₂ (경로차 λ)") +
+        card("상쇄 간섭", "down", ['경로차 = ' + lam2 + ' × 1, 3, 5, …'], "반파장의 <b>홀수</b> 배 · P₁ (경로차 ½λ)");
+    }
+    $("formula").innerHTML = s;
+  }
+
+  /* ---------- 조작부 ---------- */
+  function group(parent, label) {
+    var g = document.createElement("div"); g.className = "group";
+    var l = document.createElement("span"); l.className = "lbl"; l.textContent = label; g.appendChild(l);
+    parent.appendChild(g); return g;
+  }
+  function choice(parent, label, opts, cur, cb) {
+    var g = group(parent, label); g.classList.add("pick");
+    opts.forEach(function (o) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "tog"; b.textContent = o[1]; b.setAttribute("aria-pressed", String(o[0] === cur));
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call(g.querySelectorAll(".tog"), function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+        cb(o[0]);
+      });
+      g.appendChild(b);
+    });
+  }
+  function tog(parent, label, on, cb, color) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "tog"; b.textContent = label; b.setAttribute("aria-pressed", String(on));
+    if (color) { var sw = document.createElement("i"); sw.className = "sw"; sw.style.setProperty("--c", color); b.insertBefore(sw, b.firstChild); }
+    b.addEventListener("click", function () { var v = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(v)); cb(v); });
+    parent.appendChild(b); return b;
+  }
+  function btn(parent, label, cb) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "btn sm"; b.textContent = label; b.addEventListener("click", cb); parent.appendChild(b);
+  }
+  function placeP(p) { st.P = { x: p.x, y: p.y }; st.trace = []; st.traceY = null; }
+  function restart() { st.t = 0; playing = false; placeP(P2); updateButtons(); }
+  function panels() { $("walk-panel").hidden = st.view !== "paths"; $("formula-panel").hidden = !st.formula; }
+  function renderCtls() {
+    var box = $("ctls"); box.textContent = "";
+    if (st.view === "sum") {
+      choice(box, "두 음파의 위상", [["same", "같은 위상"], ["opp", "반대 위상"]], st.phase, function (v) { st.phase = v; renderFormula(); });
+      var g1 = group(box, "보기");
+      tog(g1, "마루 위치", st.crestLines, function (v) { st.crestLines = v; }, "var(--muted)");
+      tog(g1, "겹쳐 보기", st.overlay, function (v) { st.overlay = v; }, "var(--mark)");
+      tog(g1, "관계식", st.formula, function (v) { st.formula = v; panels(); }, "var(--ink)");
+      return;
+    }
+    var gp = group(box, "듣는 위치");
+    btn(gp, "P₁ 으로", function () { placeP(P1); });
+    btn(gp, "P₂ 로", function () { placeP(P2); });
+    tog(gp, "가로질러 걷기", st.walk, function (v) { st.walk = v; });
+    var g2 = group(box, "보기");
+    tog(g2, "파면", st.fronts, function (v) { st.fronts = v; }, "var(--accent)");
+    tog(g2, "보강·상쇄 점", st.dots, function (v) { st.dots = v; }, "var(--heat)");
+    tog(g2, "보강·상쇄 선", st.lines, function (v) { st.lines = v; }, "var(--heat)");
+    tog(g2, "간섭 무늬", st.map, function (v) { st.map = v; }, "var(--heat)");
+    tog(g2, "관계식", st.formula, function (v) { st.formula = v; panels(); }, "var(--ink)");
+  }
+  function updateButtons() { $("btn-play").textContent = playing ? "⏸ 멈춤" : "▶ 재생"; $("btn-slow").setAttribute("aria-pressed", String(slow)); }
+  function renderTabs() {
+    var box = $("cases"); box.textContent = "";
+    TABS.forEach(function (tb) {
+      var b = document.createElement("button"); b.type = "button"; b.id = "case-" + tb[0]; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(st.view === tb[0])); b.textContent = tb[1];
+      b.addEventListener("click", function () { go(tb[0]); }); box.appendChild(b);
+    });
+  }
+  function go(id) {
+    st.view = id;
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* 파일로 열 때 */ }
+    renderTabs();
+    $("scene").setAttribute("aria-label", { sum: "S₁과 S₂의 음파와 두 음파의 합: 같은 위상이면 진폭이 커지고 반대 위상이면 작아진다", paths: "두 스피커 S₁, S₂에서 퍼져 나가는 파면과 듣는 사람 P, 경로차에 따른 보강 간섭과 상쇄 간섭" }[id]);
+    $("scene").classList.toggle("sq", id === "paths");
+    $("scene").classList.toggle("drag", id === "paths");
+    restart(); renderCtls(); renderFormula(); panels();
+  }
+
+  /* P 끌어서 옮기기 */
+  var dragging = false;
+  function toWorld(e) {
+    var cv = $("scene"), rc = cv.getBoundingClientRect(), G = geo(rc.width, rc.height);
+    return { x: (e.clientX - rc.left - G.m) / G.S, y: (G.y0 - (e.clientY - rc.top)) / G.S, G: G };
+  }
+  $("scene").addEventListener("pointerdown", function (e) {
+    if (st.view !== "paths") return;
+    var p = toWorld(e), dx = (p.x - st.P.x) * p.G.S, dy = (p.y - st.P.y) * p.G.S;
+    if (Math.hypot(dx, dy) > 36) return;
+    dragging = true; this.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  $("scene").addEventListener("pointermove", function (e) {
+    if (!dragging) return;
+    var p = toWorld(e);
+    st.P.x = Math.max(0.02, Math.min(0.98, p.x)); st.P.y = Math.max(0.06, Math.min(p.G.top - 0.03, p.y));
+  });
+  function endDrag() { dragging = false; }
+  $("scene").addEventListener("pointerup", endDrag);
+  $("scene").addEventListener("pointercancel", endDrag);
+
+  $("btn-play").addEventListener("click", function () { playing = !playing; updateButtons(); });
+  $("btn-reset").addEventListener("click", restart);
+  $("btn-step").addEventListener("click", function () { playing = false; advance(0.1); updateButtons(); });
+  $("btn-slow").addEventListener("click", function () { slow = !slow; updateButtons(); });
+
+  function advance(dt) {
+    st.t += dt;
+    if (st.view === "paths" && st.walk && arrived(st.P.x, st.P.y, st.t) === 2) {
+      st.P.x += st.wdir * 0.05 * dt;
+      if (st.P.x > 0.95) { st.P.x = 0.95; st.wdir = -1; }
+      if (st.P.x < 0.05) { st.P.x = 0.05; st.wdir = 1; }
+    }
+  }
+  var last = 0;
+  function frame(ms) {
+    var dt = Math.min(0.05, (ms - last) / 1000 || 0); last = ms;
+    if (playing) advance(dt * (slow ? 0.3 : 1));
+    colors();
+    var f = fit($("scene"));
+    if (st.view === "sum") drawSum(f.c, f.w, f.h, st.t);
+    else { record(); drawPaths(f.c, f.w, f.h, st.t); drawWalk(); }
+    requestAnimationFrame(frame);
+  }
+
+  colors();
+  var h0 = location.hash.replace("#", "");
+  go(TABS.some(function (t) { return t[0] === h0; }) ? h0 : "sum");
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
